@@ -7,7 +7,9 @@ class UpdateProductUseCase(
     private val productRepository: ProductRepository
 ) {
 
-    operator fun invoke(product: Product) {
+    suspend operator fun invoke(
+        product: Product
+    ) {
         productRepository.updateProduct(product)
     }
 }

@@ -7,7 +7,9 @@ class GetProductByCodeUseCase(
     private val productRepository: ProductRepository
 ) {
 
-    operator fun invoke(productCode: String): Product? {
+    suspend operator fun invoke(
+        productCode: String
+    ): Product? {
         return productRepository.getProductByCode(productCode)
     }
 }

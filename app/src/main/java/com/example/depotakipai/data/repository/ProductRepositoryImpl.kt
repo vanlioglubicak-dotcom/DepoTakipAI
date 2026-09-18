@@ -10,27 +10,41 @@ class ProductRepositoryImpl(
     private val productDao: ProductDao
 ) : ProductRepository {
 
-    override fun getAllProducts(): List<Product> {
+    override suspend fun getAllProducts(): List<Product> {
         return productDao.getAllProducts().map { it.toDomain() }
     }
 
-    override fun getProductByCode(productCode: String): Product? {
-        return productDao.getProductByCode(productCode)?.toDomain()
+    override suspend fun getProductByCode(
+        productCode: String
+    ): Product? {
+        return productDao
+            .getProductByCode(productCode)
+            ?.toDomain()
     }
 
-    override fun getProductByBarcode(systemBarcode: String): Product? {
-        return productDao.getProductByBarcode(systemBarcode)?.toDomain()
+    override suspend fun getProductByBarcode(
+        systemBarcode: String
+    ): Product? {
+        return productDao
+            .getProductByBarcode(systemBarcode)
+            ?.toDomain()
     }
 
-    override fun addProduct(product: Product) {
+    override suspend fun addProduct(
+        product: Product
+    ) {
         productDao.insertProduct(product.toEntity())
     }
 
-    override fun updateProduct(product: Product) {
+    override suspend fun updateProduct(
+        product: Product
+    ) {
         productDao.updateProduct(product.toEntity())
     }
 
-    override fun deleteProduct(productCode: String) {
+    override suspend fun deleteProduct(
+        productCode: String
+    ) {
         productDao.getProductByCode(productCode)?.let {
             productDao.deleteProduct(it)
         }
@@ -47,7 +61,9 @@ private fun ProductEntity.toDomain(): Product {
         rowNumber = rowNumber,
         shelfNumber = shelfNumber,
         position = position?.let {
-            runCatching { ShelfPosition.valueOf(it) }.getOrNull()
+            runCatching {
+                ShelfPosition.valueOf(it)
+            }.getOrNull()
         },
         createdAt = createdAt
     )

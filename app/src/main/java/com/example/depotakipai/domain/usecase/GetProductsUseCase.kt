@@ -7,7 +7,7 @@ class GetProductsUseCase(
     private val productRepository: ProductRepository
 ) {
 
-    operator fun invoke(): List<Product> {
+    suspend operator fun invoke(): List<Product> {
         return productRepository.getAllProducts()
     }
 }

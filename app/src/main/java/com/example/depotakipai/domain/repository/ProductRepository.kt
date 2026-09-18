@@ -4,25 +4,25 @@ import com.example.depotakipai.domain.model.Product
 
 interface ProductRepository {
 
-    fun getAllProducts(): List<Product>
+    suspend fun getAllProducts(): List<Product>
 
-    fun getProductByCode(
+    suspend fun getProductByCode(
         productCode: String
     ): Product?
 
-    fun getProductByBarcode(
+    suspend fun getProductByBarcode(
         systemBarcode: String
     ): Product?
 
-    fun addProduct(
+    suspend fun addProduct(
         product: Product
     )
 
-    fun updateProduct(
+    suspend fun updateProduct(
         product: Product
     )
 
-    fun deleteProduct(
+    suspend fun deleteProduct(
         productCode: String
     )
 }

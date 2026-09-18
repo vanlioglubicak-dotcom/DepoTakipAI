@@ -1,6 +1,7 @@
 package com.example.depotakipai.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,7 +32,9 @@ private val Background = Color(0xFFF5F5F5)
 private val TextDark = Color(0xFF222222)
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onProductsClick: () -> Unit = {}
+) {
 
     Box(
         modifier = Modifier
@@ -57,7 +60,9 @@ fun HomeScreen() {
                 modifier = Modifier.height(24.dp)
             )
 
-            DashboardGrid()
+            DashboardGrid(
+                onProductsClick = onProductsClick
+            )
 
             Spacer(
                 modifier = Modifier.height(28.dp)
@@ -80,7 +85,8 @@ fun HomeScreen() {
         BottomNavigationBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
+                .navigationBarsPadding(),
+            onProductsClick = onProductsClick
         )
     }
 }
@@ -123,7 +129,9 @@ private fun HomeHeader() {
 }
 
 @Composable
-private fun DashboardGrid() {
+private fun DashboardGrid(
+    onProductsClick: () -> Unit
+) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -135,7 +143,11 @@ private fun DashboardGrid() {
         ) {
 
             DashboardCard(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        onProductsClick()
+                    },
                 symbol = "▣",
                 title = "Ürünler",
                 color = DarkRed
@@ -247,7 +259,8 @@ private fun EmptyOperationsCard() {
 
 @Composable
 private fun BottomNavigationBar(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onProductsClick: () -> Unit
 ) {
 
     Box(
@@ -272,6 +285,9 @@ private fun BottomNavigationBar(
             )
 
             BottomNavigationItem(
+                modifier = Modifier.clickable {
+                    onProductsClick()
+                },
                 symbol = "▣",
                 text = "Ürün",
                 selected = false
@@ -312,12 +328,14 @@ private fun BottomNavigationBar(
 
 @Composable
 private fun BottomNavigationItem(
+    modifier: Modifier = Modifier,
     symbol: String,
     text: String,
     selected: Boolean
 ) {
 
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 

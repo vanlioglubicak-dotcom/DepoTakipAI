@@ -11,20 +11,30 @@ import com.example.depotakipai.data.model.ProductEntity
 interface ProductDao {
 
     @Query("SELECT * FROM products ORDER BY createdAt DESC")
-    fun getAllProducts(): List<ProductEntity>
+    suspend fun getAllProducts(): List<ProductEntity>
 
     @Query("SELECT * FROM products WHERE productCode = :productCode LIMIT 1")
-    fun getProductByCode(productCode: String): ProductEntity?
+    suspend fun getProductByCode(
+        productCode: String
+    ): ProductEntity?
 
     @Query("SELECT * FROM products WHERE systemBarcode = :systemBarcode LIMIT 1")
-    fun getProductByBarcode(systemBarcode: String): ProductEntity?
+    suspend fun getProductByBarcode(
+        systemBarcode: String
+    ): ProductEntity?
 
     @Insert
-    fun insertProduct(product: ProductEntity)
+    suspend fun insertProduct(
+        product: ProductEntity
+    )
 
     @Update
-    fun updateProduct(product: ProductEntity)
+    suspend fun updateProduct(
+        product: ProductEntity
+    )
 
     @Delete
-    fun deleteProduct(product: ProductEntity)
+    suspend fun deleteProduct(
+        product: ProductEntity
+    )
 }

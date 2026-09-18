@@ -1,15 +1,14 @@
 package com.example.depotakipai.domain.usecase
 
-import com.example.depotakipai.domain.model.Product
 import com.example.depotakipai.domain.repository.ProductRepository
 
-class AddProductUseCase(
+class DeleteProductUseCase(
     private val productRepository: ProductRepository
 ) {
 
     suspend operator fun invoke(
-        product: Product
+        productCode: String
     ) {
-        productRepository.addProduct(product)
+        productRepository.deleteProduct(productCode)
     }
 }
