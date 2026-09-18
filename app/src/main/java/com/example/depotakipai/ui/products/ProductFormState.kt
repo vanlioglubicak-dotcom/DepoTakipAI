@@ -8,5 +8,6 @@ data class ProductFormState(
     val quantity: String = "0",
     val rowNumber: String = "",
     val shelfNumber: String = "",
-    val position: String = ""
+    val position: String = "",
+    val photoUri: String? = null
 )

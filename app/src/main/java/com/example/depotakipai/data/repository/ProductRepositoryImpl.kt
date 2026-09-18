@@ -11,7 +11,9 @@ class ProductRepositoryImpl(
 ) : ProductRepository {
 
     override suspend fun getAllProducts(): List<Product> {
-        return productDao.getAllProducts().map { it.toDomain() }
+        return productDao
+            .getAllProducts()
+            .map { it.toDomain() }
     }
 
     override suspend fun getProductByCode(
@@ -33,25 +35,32 @@ class ProductRepositoryImpl(
     override suspend fun addProduct(
         product: Product
     ) {
-        productDao.insertProduct(product.toEntity())
+        productDao.insertProduct(
+            product.toEntity()
+        )
     }
 
     override suspend fun updateProduct(
         product: Product
     ) {
-        productDao.updateProduct(product.toEntity())
+        productDao.updateProduct(
+            product.toEntity()
+        )
     }
 
     override suspend fun deleteProduct(
         productCode: String
     ) {
-        productDao.getProductByCode(productCode)?.let {
-            productDao.deleteProduct(it)
-        }
+        productDao
+            .getProductByCode(productCode)
+            ?.let {
+                productDao.deleteProduct(it)
+            }
     }
 }
 
 private fun ProductEntity.toDomain(): Product {
+
     return Product(
         productCode = productCode,
         systemBarcode = systemBarcode,
@@ -65,11 +74,13 @@ private fun ProductEntity.toDomain(): Product {
                 ShelfPosition.valueOf(it)
             }.getOrNull()
         },
+        photoUri = photoUri,
         createdAt = createdAt
     )
 }
 
 private fun Product.toEntity(): ProductEntity {
+
     return ProductEntity(
         productCode = productCode,
         systemBarcode = systemBarcode,
@@ -79,6 +90,7 @@ private fun Product.toEntity(): ProductEntity {
         rowNumber = rowNumber,
         shelfNumber = shelfNumber,
         position = position?.name,
+        photoUri = photoUri,
         createdAt = createdAt
     )
 }

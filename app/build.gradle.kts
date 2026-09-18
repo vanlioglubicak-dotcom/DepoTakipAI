@@ -51,6 +51,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+
+    // Coil - ürün fotoğrafları
+    implementation(libs.coil.compose)
 
     // Room
     implementation(libs.androidx.room.runtime)

@@ -7,20 +7,13 @@ import androidx.room.PrimaryKey
 data class ProductEntity(
     @PrimaryKey
     val productCode: String,
-
     val systemBarcode: String?,
-
     val color: String,
-
     val size: String,
-
     val quantity: Int,
-
     val rowNumber: Int?,
-
     val shelfNumber: Int?,
-
     val position: String?,
-
+    val photoUri: String?,
     val createdAt: Long
 )

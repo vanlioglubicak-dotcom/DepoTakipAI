@@ -9,6 +9,7 @@ data class Product(
     val rowNumber: Int?,
     val shelfNumber: Int?,
     val position: ShelfPosition?,
+    val photoUri: String?,
     val createdAt: Long
 )
 
