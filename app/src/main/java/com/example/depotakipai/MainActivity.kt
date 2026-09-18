@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.example.depotakipai.ui.home.HomeScreen
+import com.example.depotakipai.ui.navigation.AppNavigation
 import com.example.depotakipai.ui.splash.SplashScreen
 import com.example.depotakipai.ui.theme.DepoTakipAITheme
 
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
                 } else {
 
-                    HomeScreen()
+                    AppNavigation()
                 }
             }
         }
