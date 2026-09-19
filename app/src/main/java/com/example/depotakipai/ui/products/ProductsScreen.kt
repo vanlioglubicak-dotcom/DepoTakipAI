@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.depotakipai.domain.model.Product
 
 private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
@@ -45,8 +44,11 @@ private val LightBackground = Color(0xFFF5F5F5)
 @Composable
 fun ProductsScreen(
     onBack: () -> Unit = {},
-    onAddProduct: () -> Unit = {}
+    onAddProduct: () -> Unit = {},
+    onReturnsClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
+
     val context = LocalContext.current
 
     val productsViewModel: ProductsViewModel = viewModel(
@@ -70,12 +72,15 @@ fun ProductsScreen(
         products,
         searchText
     ) {
+
         val query = searchText.trim()
 
         if (query.isBlank()) {
             products
         } else {
+
             products.filter { product ->
+
                 product.productCode.contains(
                     query,
                     ignoreCase = true
@@ -100,6 +105,7 @@ fun ProductsScreen(
 
     val totalShelves = products
         .mapNotNull { product ->
+
             if (
                 product.rowNumber != null &&
                 product.shelfNumber != null
@@ -117,146 +123,170 @@ fun ProductsScreen(
             .fillMaxSize()
             .background(LightBackground)
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp)
     ) {
 
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
+        // =========================================================
+        // ÜST İÇERİK
+        // =========================================================
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            Column {
+            // -----------------------------------------------------
+            // BAŞLIK
+            // -----------------------------------------------------
 
-                Text(
-                    text = "ÜRÜNLER",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkRed
-                )
+            item {
 
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier = Modifier.height(12.dp)
                 )
 
-                Text(
-                    text = "Depodaki ürünlerinizi yönetin",
-                    fontSize = 13.sp,
-                    color = Gray
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
+                    Column {
+
+                        Text(
+                            text = "ÜRÜNLER",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkRed
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(3.dp)
+                        )
+
+                        Text(
+                            text = "Depodaki ürünlerinizi yönetin",
+                            fontSize = 13.sp,
+                            color = Gray
+                        )
+                    }
+
+                    Button(
+                        onClick = onBack,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Gray
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+
+                        Text(
+                            text = "Geri",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            // -----------------------------------------------------
+            // ARAMA
+            // -----------------------------------------------------
+
+            item {
+
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = {
+                        searchText = it
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = {
+                        Text("Ürün ara")
+                    },
+                    placeholder = {
+                        Text(
+                            "Ürün kodu, renk veya beden"
+                        )
+                    },
+                    shape = RoundedCornerShape(14.dp)
                 )
             }
 
-            Button(
-                onClick = onAddProduct,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = DarkRed
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
+            // -----------------------------------------------------
+            // ÖZET
+            // -----------------------------------------------------
+
+            item {
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 2.dp
+                    )
+                ) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+
+                        ProductSummaryItem(
+                            title = "ÜRÜN",
+                            value = totalProductTypes.toString(),
+                            color = DarkRed
+                        )
+
+                        ProductSummaryItem(
+                            title = "ADET",
+                            value = totalQuantity.toString(),
+                            color = SteelBlue
+                        )
+
+                        ProductSummaryItem(
+                            title = "RAF",
+                            value = totalShelves.toString(),
+                            color = Gray
+                        )
+                    }
+                }
+            }
+
+            // -----------------------------------------------------
+            // LİSTE BAŞLIĞI
+            // -----------------------------------------------------
+
+            item {
 
                 Text(
-                    text = "+ Ürün",
-                    fontWeight = FontWeight.Bold
+                    text = "ÜRÜN LİSTESİ",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
                 )
             }
-        }
 
-        Spacer(
-            modifier = Modifier.height(18.dp)
-        )
+            // -----------------------------------------------------
+            // YÜKLENİYOR
+            // -----------------------------------------------------
 
-        OutlinedTextField(
-            value = searchText,
-            onValueChange = {
-                searchText = it
-            },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = {
-                Text("Ürün ara")
-            },
-            placeholder = {
-                Text(
-                    "Ürün kodu, renk veya beden"
-                )
-            },
-            shape = RoundedCornerShape(14.dp)
-        )
+            if (isLoading) {
 
-        Spacer(
-            modifier = Modifier.height(18.dp)
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
-        ) {
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                ProductSummaryItem(
-                    title = "ÜRÜN",
-                    value = totalProductTypes.toString(),
-                    color = DarkRed
-                )
-
-                ProductSummaryItem(
-                    title = "ADET",
-                    value = totalQuantity.toString(),
-                    color = SteelBlue
-                )
-
-                ProductSummaryItem(
-                    title = "RAF",
-                    value = totalShelves.toString(),
-                    color = Gray
-                )
-            }
-        }
-
-        Spacer(
-            modifier = Modifier.height(18.dp)
-        )
-
-        Text(
-            text = "ÜRÜN LİSTESİ",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.DarkGray
-        )
-
-        Spacer(
-            modifier = Modifier.height(10.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-
-            when {
-
-                isLoading -> {
+                item {
 
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
                         contentAlignment = Alignment.Center
                     ) {
 
@@ -267,11 +297,20 @@ fun ProductsScreen(
                         )
                     }
                 }
+            }
 
-                filteredProducts.isEmpty() -> {
+            // -----------------------------------------------------
+            // ÜRÜN YOK
+            // -----------------------------------------------------
+
+            else if (filteredProducts.isEmpty()) {
+
+                item {
 
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
                         contentAlignment = Alignment.Center
                     ) {
 
@@ -309,7 +348,7 @@ fun ProductsScreen(
                             Text(
                                 text =
                                     if (products.isEmpty()) {
-                                        "İlk ürününüzü eklemek için + Ürün butonuna basın."
+                                        "Ürün eklemek için aşağıdaki + butonunu kullanın."
                                     } else {
                                         "Farklı bir ürün kodu, renk veya beden deneyin."
                                     },
@@ -319,142 +358,51 @@ fun ProductsScreen(
                         }
                     }
                 }
+            }
 
-                else -> {
+            // -----------------------------------------------------
+            // ÜRÜNLER
+            // -----------------------------------------------------
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement =
-                            Arrangement.spacedBy(10.dp)
-                    ) {
+            else {
 
-                        items(
-                            items = filteredProducts,
-                            key = {
-                                it.productCode
-                            }
-                        ) { product ->
-
-                            ProductListItem(
-                                product = product
-                            )
-                        }
-
-                        item {
-                            Spacer(
-                                modifier = Modifier.height(8.dp)
-                            )
-                        }
+                items(
+                    items = filteredProducts,
+                    key = {
+                        it.productCode
                     }
+                ) { product ->
+
+                    ProductListItem(
+                        product = product
+                    )
+                }
+
+                item {
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun ProductListItem(
-    product: Product
-) {
+        // =========================================================
+        // ALT MENÜ
+        // =========================================================
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
+        ProductBottomNavigation(
+            onHomeClick = onBack,
+            onAddClick = onAddProduct,
+            onReturnsClick = onReturnsClick,
+            onSettingsClick = onSettingsClick
         )
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.SpaceBetween,
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-
-                    Text(
-                        text = product.productCode,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkRed
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
-
-                    Text(
-                        text =
-                            "${product.color} • ${product.size}",
-                        fontSize = 13.sp,
-                        color = Color.DarkGray
-                    )
-                }
-
-                Column(
-                    horizontalAlignment =
-                        Alignment.End
-                ) {
-
-                    Text(
-                        text = "${product.quantity} adet",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SteelBlue
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(3.dp)
-                    )
-
-                    val locationText =
-                        if (
-                            product.rowNumber != null &&
-                            product.shelfNumber != null
-                        ) {
-                            "Sıra ${product.rowNumber} • Raf ${product.shelfNumber}"
-                        } else {
-                            "Konum belirtilmemiş"
-                        }
-
-                    Text(
-                        text = locationText,
-                        fontSize = 11.sp,
-                        color = Gray
-                    )
-                }
-            }
-
-            if (!product.systemBarcode.isNullOrBlank()) {
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
-
-                Text(
-                    text =
-                        "Sistem Barkodu: ${product.systemBarcode}",
-                    fontSize = 11.sp,
-                    color = Gray
-                )
-            }
-        }
     }
 }
+
+// =================================================================
+// ÖZET BİLGİSİ
+// =================================================================
 
 @Composable
 private fun ProductSummaryItem(
@@ -464,8 +412,7 @@ private fun ProductSummaryItem(
 ) {
 
     Column(
-        horizontalAlignment =
-            Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
@@ -485,5 +432,133 @@ private fun ProductSummaryItem(
             fontWeight = FontWeight.Bold,
             color = Gray
         )
+    }
+}
+
+// =================================================================
+// ÜRÜNLER SAYFASI ALT MENÜSÜ
+// =================================================================
+
+@Composable
+private fun ProductBottomNavigation(
+    onHomeClick: () -> Unit,
+    onAddClick: () -> Unit,
+    onReturnsClick: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .navigationBarsPadding()
+            .padding(
+                horizontal = 8.dp,
+                vertical = 8.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+
+        BottomNavigationItem(
+            icon = "⌂",
+            title = "Ana Sayfa",
+            selected = false,
+            onClick = onHomeClick
+        )
+
+        BottomNavigationItem(
+            icon = "▣",
+            title = "Ürün",
+            selected = true,
+            onClick = {}
+        )
+
+        Button(
+            onClick = onAddClick,
+            modifier = Modifier.height(64.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DarkRed
+            ),
+            shape = RoundedCornerShape(50)
+        ) {
+
+            Text(
+                text = "+",
+                fontSize = 30.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Normal
+            )
+        }
+
+        BottomNavigationItem(
+            icon = "↩",
+            title = "İade",
+            selected = false,
+            onClick = onReturnsClick
+        )
+
+        BottomNavigationItem(
+            icon = "⚙",
+            title = "Ayarlar",
+            selected = false,
+            onClick = onSettingsClick
+        )
+    }
+}
+
+// =================================================================
+// ALT MENÜ ELEMANI
+// =================================================================
+
+@Composable
+private fun BottomNavigationItem(
+    icon: String,
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor =
+                if (selected) {
+                    DarkRed
+                } else {
+                    Gray
+                }
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = icon,
+                fontSize = 22.sp,
+                color =
+                    if (selected) {
+                        DarkRed
+                    } else {
+                        Gray
+                    }
+            )
+
+            Text(
+                text = title,
+                fontSize = 10.sp,
+                color =
+                    if (selected) {
+                        DarkRed
+                    } else {
+                        Gray
+                    }
+            )
+        }
     }
 }

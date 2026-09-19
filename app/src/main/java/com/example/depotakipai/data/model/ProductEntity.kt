@@ -12,7 +12,7 @@ data class ProductEntity(
     val size: String,
     val quantity: Int,
     val rowNumber: Int?,
-    val shelfNumber: Int?,
+    val shelfNumber: String?,
     val position: String?,
     val photoUri: String?,
     val createdAt: Long

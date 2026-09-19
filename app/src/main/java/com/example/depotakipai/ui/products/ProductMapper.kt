@@ -23,8 +23,8 @@ fun ProductFormState.toProduct(): Product {
     val parsedRowNumber =
         rowNumber.trim().toIntOrNull()
 
-    val parsedShelfNumber =
-        shelfNumber.trim().toIntOrNull()
+    val cleanShelfNumber =
+        shelfNumber.trim().takeIf { it.isNotEmpty() }
 
     val parsedPosition =
         when (position.trim().uppercase()) {
@@ -46,7 +46,7 @@ fun ProductFormState.toProduct(): Product {
         size = cleanSize,
         quantity = parsedQuantity,
         rowNumber = parsedRowNumber,
-        shelfNumber = parsedShelfNumber,
+        shelfNumber = cleanShelfNumber,
         position = parsedPosition,
         photoUri = photoUri,
         createdAt = System.currentTimeMillis()

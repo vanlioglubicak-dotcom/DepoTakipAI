@@ -42,6 +42,11 @@ android {
 }
 
 dependencies {
+
+    // =========================================================
+    // COMPOSE
+    // =========================================================
+
     implementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.activity.compose)
@@ -50,16 +55,61 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+
+    // =========================================================
+    // LIFECYCLE / VIEWMODEL
+    // =========================================================
+
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
 
-    // Coil - ürün fotoğrafları
+    // =========================================================
+    // COIL - ÜRÜN FOTOĞRAFLARI
+    // =========================================================
+
     implementation(libs.coil.compose)
 
-    // Room
+    // =========================================================
+    // ROOM - VERİTABANI
+    // =========================================================
+
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // =========================================================
+    // CAMERAX
+    // =========================================================
+
+    implementation("androidx.camera:camera-core:1.6.2")
+    implementation("androidx.camera:camera-camera2:1.6.2")
+    implementation("androidx.camera:camera-lifecycle:1.6.2")
+    implementation("androidx.camera:camera-view:1.6.2")
+
+    // =========================================================
+    // ML KIT - BARKOD
+    //
+    // Model uygulamanın içine paketlenir.
+    // İlk kullanımda ayrıca model indirme beklenmez.
+    // =========================================================
+
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // =========================================================
+    // ML KIT - METİN / OCR
+    //
+    // Etiket üzerindeki:
+    // SNZ-2926
+    // BEDEN: L
+    // RENK: SİYAH
+    // gibi bilgileri okumak için.
+    // =========================================================
+
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    // =========================================================
+    // TEST
+    // =========================================================
 
     testImplementation(libs.junit)
 

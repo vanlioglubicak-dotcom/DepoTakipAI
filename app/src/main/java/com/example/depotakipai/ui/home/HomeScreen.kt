@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -33,7 +34,10 @@ private val TextDark = Color(0xFF222222)
 
 @Composable
 fun HomeScreen(
-    onProductsClick: () -> Unit = {}
+    onProductsClick: () -> Unit = {},
+    onAddProductClick: () -> Unit = {},
+    onReturnsClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
 
     Box(
@@ -42,54 +46,87 @@ fun HomeScreen(
             .background(Background)
     ) {
 
-        Column(
+        // =========================================================
+        // ANA İÇERİK
+        // =========================================================
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(
                     start = 16.dp,
-                    end = 16.dp,
-                    top = 18.dp,
-                    bottom = 96.dp
+                    end = 16.dp
                 )
+                .padding(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
 
-            HomeHeader()
+            item {
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
+                Spacer(
+                    modifier = Modifier.height(18.dp)
+                )
 
-            DashboardGrid(
-                onProductsClick = onProductsClick
-            )
+                HomeHeader()
 
-            Spacer(
-                modifier = Modifier.height(28.dp)
-            )
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
+            }
 
-            Text(
-                text = "Son İşlemler",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark
-            )
+            item {
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+                DashboardGrid(
+                    onProductsClick = onProductsClick,
+                    onReturnsClick = onReturnsClick
+                )
 
-            EmptyOperationsCard()
+                Spacer(
+                    modifier = Modifier.height(28.dp)
+                )
+            }
+
+            item {
+
+                Text(
+                    text = "Son İşlemler",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                EmptyOperationsCard()
+
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+            }
         }
+
+        // =========================================================
+        // SABİT ALT MENÜ
+        // =========================================================
 
         BottomNavigationBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
-            onProductsClick = onProductsClick
+            onProductsClick = onProductsClick,
+            onAddProductClick = onAddProductClick,
+            onReturnsClick = onReturnsClick,
+            onSettingsClick = onSettingsClick
         )
     }
 }
+
+// =================================================================
+// ANA SAYFA ÜST BAŞLIK
+// =================================================================
 
 @Composable
 private fun HomeHeader() {
@@ -128,9 +165,14 @@ private fun HomeHeader() {
     }
 }
 
+// =================================================================
+// DASHBOARD
+// =================================================================
+
 @Composable
 private fun DashboardGrid(
-    onProductsClick: () -> Unit
+    onProductsClick: () -> Unit,
+    onReturnsClick: () -> Unit
 ) {
 
     Column(
@@ -154,7 +196,11 @@ private fun DashboardGrid(
             )
 
             DashboardCard(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        onReturnsClick()
+                    },
                 symbol = "↩",
                 title = "İadeler",
                 color = SteelBlue
@@ -182,6 +228,10 @@ private fun DashboardGrid(
         }
     }
 }
+
+// =================================================================
+// DASHBOARD KARTI
+// =================================================================
 
 @Composable
 private fun DashboardCard(
@@ -234,6 +284,10 @@ private fun DashboardCard(
     }
 }
 
+// =================================================================
+// SON İŞLEMLER
+// =================================================================
+
 @Composable
 private fun EmptyOperationsCard() {
 
@@ -257,10 +311,17 @@ private fun EmptyOperationsCard() {
     }
 }
 
+// =================================================================
+// ALT MENÜ
+// =================================================================
+
 @Composable
 private fun BottomNavigationBar(
     modifier: Modifier = Modifier,
-    onProductsClick: () -> Unit
+    onProductsClick: () -> Unit,
+    onAddProductClick: () -> Unit,
+    onReturnsClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
 
     Box(
@@ -278,11 +339,19 @@ private fun BottomNavigationBar(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
 
+            // -----------------------------------------------------
+            // ANA SAYFA
+            // -----------------------------------------------------
+
             BottomNavigationItem(
                 symbol = "⌂",
                 text = "Ana Sayfa",
                 selected = true
             )
+
+            // -----------------------------------------------------
+            // ÜRÜN
+            // -----------------------------------------------------
 
             BottomNavigationItem(
                 modifier = Modifier.clickable {
@@ -293,9 +362,16 @@ private fun BottomNavigationBar(
                 selected = false
             )
 
+            // -----------------------------------------------------
+            // MERKEZ + BUTONU
+            // -----------------------------------------------------
+
             Box(
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(58.dp)
+                    .clickable {
+                        onAddProductClick()
+                    }
                     .background(
                         color = DarkRed,
                         shape = CircleShape
@@ -305,19 +381,33 @@ private fun BottomNavigationBar(
 
                 Text(
                     text = "+",
-                    fontSize = 30.sp,
+                    fontSize = 32.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Light
                 )
             }
 
+            // -----------------------------------------------------
+            // İADE
+            // -----------------------------------------------------
+
             BottomNavigationItem(
+                modifier = Modifier.clickable {
+                    onReturnsClick()
+                },
                 symbol = "↩",
                 text = "İade",
                 selected = false
             )
 
+            // -----------------------------------------------------
+            // AYARLAR
+            // -----------------------------------------------------
+
             BottomNavigationItem(
+                modifier = Modifier.clickable {
+                    onSettingsClick()
+                },
                 symbol = "⚙",
                 text = "Ayarlar",
                 selected = false
@@ -325,6 +415,10 @@ private fun BottomNavigationBar(
         }
     }
 }
+
+// =================================================================
+// ALT MENÜ ELEMANI
+// =================================================================
 
 @Composable
 private fun BottomNavigationItem(
@@ -335,14 +429,21 @@ private fun BottomNavigationItem(
 ) {
 
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(
+            horizontal = 8.dp,
+            vertical = 6.dp
+        ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Text(
             text = symbol,
             fontSize = 21.sp,
-            color = if (selected) DarkRed else Gray
+            color = if (selected) {
+                DarkRed
+            } else {
+                Gray
+            }
         )
 
         Spacer(
@@ -352,7 +453,11 @@ private fun BottomNavigationItem(
         Text(
             text = text,
             fontSize = 10.sp,
-            color = if (selected) DarkRed else Gray
+            color = if (selected) {
+                DarkRed
+            } else {
+                Gray
+            }
         )
     }
 }

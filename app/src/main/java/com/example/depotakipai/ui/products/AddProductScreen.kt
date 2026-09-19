@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +47,8 @@ import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import com.example.depotakipai.ui.camera.CameraScanResult
+
 private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
 private val Gray = Color(0xFF606060)
@@ -60,8 +63,10 @@ private val FieldPlaceholder = Color(0xFF707070)
 fun AddProductScreen(
     onBack: () -> Unit = {},
     onProductSaved: () -> Unit = {},
-    onCameraClick: () -> Unit = {}
+    onCameraClick: () -> Unit = {},
+    cameraResult: CameraScanResult? = null
 ) {
+
     val context = LocalContext.current
 
     val productsViewModel: ProductsViewModel = viewModel(
@@ -70,14 +75,33 @@ fun AddProductScreen(
         )
     )
 
-    var productCode by remember { mutableStateOf("") }
-    var systemBarcode by remember { mutableStateOf("") }
-    var color by remember { mutableStateOf("") }
-    var size by remember { mutableStateOf("") }
-    var quantity by remember { mutableStateOf("") }
-    var rowNumber by remember { mutableStateOf("") }
-    var shelfNumber by remember { mutableStateOf("") }
-    var position by remember { mutableStateOf("") }
+    var productCode by remember {
+        mutableStateOf("")
+    }
+
+    var color by remember {
+        mutableStateOf("")
+    }
+
+    var size by remember {
+        mutableStateOf("")
+    }
+
+    var quantity by remember {
+        mutableStateOf("")
+    }
+
+    var rowNumber by remember {
+        mutableStateOf("")
+    }
+
+    var shelfNumber by remember {
+        mutableStateOf("")
+    }
+
+    var position by remember {
+        mutableStateOf("")
+    }
 
     var photoUri by remember {
         mutableStateOf<Uri?>(null)
@@ -91,44 +115,203 @@ fun AddProductScreen(
         mutableStateOf(false)
     }
 
+    val colorOptions = listOf(
+        "SİYAH",
+        "BEYAZ",
+        "KIRMIZI",
+        "LACİVERT",
+        "MAVİ",
+        "YEŞİL",
+        "GRİ",
+        "BEJ",
+        "KAHVERENGİ",
+        "BORDO",
+        "PEMBE",
+        "EKRU"
+    )
+
+    val sizeOptions = listOf(
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "XXXL",
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46",
+        "48",
+        "50"
+    )
+
+    /*
+     * =========================================================
+     * KAMERA SONUCUNU FORMA AKTAR
+     * =========================================================
+     */
+
+    LaunchedEffect(cameraResult) {
+
+        cameraResult?.let { result ->
+
+            result.productCode?.let {
+                productCode = it.uppercase()
+            }
+
+            result.color?.let {
+                color = it.uppercase()
+            }
+
+            result.size?.let {
+                size = it.uppercase()
+            }
+
+            if (
+                result.productCode != null ||
+                result.color != null ||
+                result.size != null
+            ) {
+                message =
+                    "Kamera bilgileri forma aktarıldı."
+            }
+        }
+    }
+
+    /*
+     * =========================================================
+     * SİSTEM BARKODU
+     *
+     * Ürün kodundan otomatik oluşturulur.
+     *
+     * SNZ-2926 → 00002926
+     * =========================================================
+     */
+
+    val systemBarcode = remember(productCode) {
+
+        val numericPart =
+            productCode.filter {
+                it.isDigit()
+            }
+
+        if (numericPart.isNotEmpty()) {
+
+            numericPart
+                .takeLast(8)
+                .padStart(8, '0')
+
+        } else {
+            ""
+        }
+    }
+
+    /*
+     * =========================================================
+     * GALERİ
+     * =========================================================
+     */
+
     val galleryLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
+            contract =
+                ActivityResultContracts.GetContent()
         ) { uri ->
+
             photoUri = uri
 
             if (uri != null) {
-                message = "Ürün fotoğrafı seçildi."
+                message =
+                    "Ürün fotoğrafı seçildi."
             }
         }
 
+    /*
+     * =========================================================
+     * TEXT FIELD RENKLERİ
+     * =========================================================
+     */
+
     val fieldColors =
         OutlinedTextFieldDefaults.colors(
-            focusedTextColor = FieldText,
-            unfocusedTextColor = FieldText,
-            focusedLabelColor = DarkRed,
-            unfocusedLabelColor = FieldText,
-            focusedPlaceholderColor = FieldPlaceholder,
-            unfocusedPlaceholderColor = FieldPlaceholder,
-            focusedBorderColor = FieldFocusedBorder,
-            unfocusedBorderColor = FieldBorder,
-            cursorColor = DarkRed
+
+            focusedTextColor =
+                FieldText,
+
+            unfocusedTextColor =
+                FieldText,
+
+            focusedLabelColor =
+                DarkRed,
+
+            unfocusedLabelColor =
+                FieldText,
+
+            focusedPlaceholderColor =
+                FieldPlaceholder,
+
+            unfocusedPlaceholderColor =
+                FieldPlaceholder,
+
+            focusedBorderColor =
+                FieldFocusedBorder,
+
+            unfocusedBorderColor =
+                FieldBorder,
+
+            disabledTextColor =
+                FieldText,
+
+            disabledLabelColor =
+                FieldText,
+
+            disabledBorderColor =
+                FieldBorder,
+
+            disabledPlaceholderColor =
+                FieldPlaceholder,
+
+            cursorColor =
+                DarkRed
         )
 
-    LaunchedEffect(productsViewModel.saveResult) {
-        when (productsViewModel.saveResult) {
+    /*
+     * =========================================================
+     * KAYIT SONUCU
+     * =========================================================
+     */
+
+    LaunchedEffect(
+        productsViewModel.saveResult
+    ) {
+
+        when (
+            productsViewModel.saveResult
+        ) {
 
             true -> {
-                message = "Ürün başarıyla kaydedildi."
+
+                message =
+                    "Ürün başarıyla kaydedildi."
+
                 isSaving = false
+
                 productsViewModel.clearSaveResult()
+
                 onProductSaved()
             }
 
             false -> {
+
                 message =
                     "Ürün kaydedilemedi. Bu ürün kodu zaten kayıtlı olabilir."
+
                 isSaving = false
+
                 productsViewModel.clearSaveResult()
             }
 
@@ -136,23 +319,48 @@ fun AddProductScreen(
         }
     }
 
+    /*
+     * =========================================================
+     * ANA EKRAN
+     * =========================================================
+     */
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightBackground)
+            .background(
+                LightBackground
+            )
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .verticalScroll(
+                rememberScrollState()
+            )
+            .padding(
+                horizontal = 16.dp
+            )
     ) {
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        /*
+         * =====================================================
+         * BAŞLIK
+         * =====================================================
+         */
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            verticalAlignment =
+                Alignment.CenterVertically,
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
 
             Column {
@@ -160,14 +368,19 @@ fun AddProductScreen(
                 Text(
                     text = "ÜRÜN EKLE",
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight =
+                        FontWeight.Bold,
                     color = DarkRed
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(3.dp)
+                )
 
                 Text(
-                    text = "Yeni ürün kaydı oluştur",
+                    text =
+                        "Yeni ürün kaydı oluştur",
                     fontSize = 13.sp,
                     color = Gray
                 )
@@ -175,337 +388,752 @@ fun AddProductScreen(
 
             Button(
                 onClick = onBack,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Gray
-                ),
-                shape = RoundedCornerShape(12.dp)
+
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = Gray
+                    ),
+
+                shape =
+                    RoundedCornerShape(12.dp)
             ) {
+
                 Text(
                     text = "Geri",
                     color = Color.White,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(
+            modifier = Modifier.height(18.dp)
+        )
+
+        /*
+         * =====================================================
+         * ÜRÜN BİLGİLERİ
+         * =====================================================
+         */
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(16.dp),
+
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        Color.White
+                ),
+
+            elevation =
+                CardDefaults.cardElevation(
+                    defaultElevation = 2.dp
+                )
         ) {
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
             ) {
 
                 Text(
-                    text = "ÜRÜN BİLGİLERİ",
+                    text =
+                        "ÜRÜN BİLGİLERİ",
+
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
                     color = DarkRed
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+
+                /*
+                 * TRENDYOL ÜRÜN KODU
+                 */
 
                 OutlinedTextField(
                     value = productCode,
+
                     onValueChange = {
-                        productCode = it
+                        productCode =
+                            it.uppercase()
+
+                        message = null
                     },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     singleLine = true,
+
                     label = {
-                        Text("Ürün Kodu")
+                        Text(
+                            "Trendyol Ürün Kodu"
+                        )
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
+
+                    placeholder = {
+                        Text(
+                            "Örnek: SNZ-2759"
+                        )
+                    },
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                /*
+                 * SİSTEM BARKODU
+                 */
 
-                    OutlinedTextField(
-                        value = systemBarcode,
-                        onValueChange = {
-                            systemBarcode =
-                                it.filter { char ->
-                                    char.isDigit()
-                                }
-                        },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        label = {
-                            Text("Sistem Barkodu")
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
-                    )
+                OutlinedTextField(
+                    value = systemBarcode,
 
-                    Button(
-                        onClick = {
+                    onValueChange = {},
 
-                            val numericPart =
-                                productCode.filter {
-                                    it.isDigit()
-                                }
+                    modifier =
+                        Modifier.fillMaxWidth(),
 
-                            if (numericPart.isNotEmpty()) {
+                    enabled = false,
 
-                                systemBarcode =
-                                    numericPart
-                                        .takeLast(8)
-                                        .padStart(8, '0')
+                    singleLine = true,
 
-                                message = null
-
-                            } else {
-
-                                message =
-                                    "Önce ürün kodunu girin."
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SteelBlue
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-
+                    label = {
                         Text(
-                            text = "BARKOD",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            "Sistem Barkodu"
                         )
-                    }
-                }
+                    },
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    placeholder = {
+                        Text(
+                            "Ürün kodundan otomatik oluşturulur"
+                        )
+                    },
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(14.dp)
+                )
+
+                /*
+                 * KAMERA
+                 */
 
                 Button(
-                    onClick = onCameraClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkRed
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                    onClick =
+                        onCameraClick,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                DarkRed
+                        ),
+
+                    shape =
+                        RoundedCornerShape(12.dp)
                 ) {
 
                     Text(
-                        text = "📷  KAMERADAN OKU",
-                        color = Color.White,
+                        text =
+                            "📷  KAMERADAN OKU",
+
+                        color =
+                            Color.White,
+
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
+
+                /*
+                 * GALERİ
+                 */
 
                 Button(
                     onClick = {
-                        galleryLauncher.launch("image/*")
+                        galleryLauncher.launch(
+                            "image/*"
+                        )
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = SteelBlue
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                SteelBlue
+                        ),
+
+                    shape =
+                        RoundedCornerShape(12.dp)
                 ) {
 
                     Text(
-                        text = "🖼  GALERİDEN FOTOĞRAF EKLE",
-                        color = Color.White,
+                        text =
+                            "🖼  GALERİDEN FOTOĞRAF EKLE",
+
+                        color =
+                            Color.White,
+
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
 
                 if (photoUri != null) {
 
                     Text(
-                        text = "✓ Ürün fotoğrafı seçildi",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
+                        text =
+                            "✓ Ürün fotoğrafı seçildi",
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = 4.dp
+                                ),
+
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
+
+                        fontWeight =
+                            FontWeight.Medium,
+
                         color = SteelBlue
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(16.dp)
+                )
+
+                /*
+                 * RENK
+                 */
+
+                Text(
+                    text = "RENK",
+
+                    fontSize = 13.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Color.DarkGray
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(
+                                rememberScrollState()
+                            ),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    colorOptions.forEach { option ->
+
+                        SelectionButton(
+                            text = option,
+
+                            selected =
+                                color.equals(
+                                    option,
+                                    ignoreCase = true
+                                ),
+
+                            onClick = {
+
+                                color = option
+                                message = null
+                            }
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
 
                 OutlinedTextField(
                     value = color,
+
                     onValueChange = {
-                        color = it
+                        color =
+                            it.uppercase()
+
+                        message = null
                     },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     singleLine = true,
+
                     label = {
                         Text("Renk")
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
+
+                    placeholder = {
+                        Text("Örneğin SİYAH")
+                    },
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(16.dp)
+                )
+
+                /*
+                 * BEDEN
+                 */
+
+                Text(
+                    text = "BEDEN",
+
+                    fontSize = 13.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Color.DarkGray
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(
+                                rememberScrollState()
+                            ),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    sizeOptions.forEach { option ->
+
+                        SelectionButton(
+                            text = option,
+
+                            selected =
+                                size.equals(
+                                    option,
+                                    ignoreCase = true
+                                ),
+
+                            onClick = {
+
+                                size = option
+                                message = null
+                            }
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(10.dp)
+                )
 
                 OutlinedTextField(
                     value = size,
+
                     onValueChange = {
-                        size = it
+                        size =
+                            it.uppercase()
+
+                        message = null
                     },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     singleLine = true,
+
                     label = {
                         Text("Beden")
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
+
+                    placeholder = {
+                        Text("Örneğin M")
+                    },
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(16.dp)
+                )
+
+                /*
+                 * ADET
+                 */
 
                 OutlinedTextField(
                     value = quantity,
+
                     onValueChange = {
+
                         quantity =
                             it.filter { char ->
                                 char.isDigit()
                             }
                     },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     singleLine = true,
+
                     label = {
                         Text("Adet")
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
+
+                    placeholder = {
+                        Text(
+                            "Ürün adedini girin"
+                        )
+                    },
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        /*
+         * =====================================================
+         * DEPO KONUMU
+         * =====================================================
+         */
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(16.dp),
+
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        Color.White
+                ),
+
+            elevation =
+                CardDefaults.cardElevation(
+                    defaultElevation = 2.dp
+                )
         ) {
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
             ) {
 
                 Text(
-                    text = "DEPO KONUMU",
+                    text =
+                        "DEPO KONUMU",
+
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
                     color = SteelBlue
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(10.dp)
                 ) {
 
                     OutlinedTextField(
                         value = rowNumber,
+
                         onValueChange = {
+
                             rowNumber =
                                 it.filter { char ->
                                     char.isDigit()
                                 }
                         },
-                        modifier = Modifier.weight(1f),
+
+                        modifier =
+                            Modifier.weight(1f),
+
                         singleLine = true,
+
                         label = {
                             Text("Sıra")
                         },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
+
+                        shape =
+                            RoundedCornerShape(12.dp),
+
+                        colors =
+                            fieldColors
                     )
 
                     OutlinedTextField(
                         value = shelfNumber,
+
                         onValueChange = {
-                            shelfNumber =
-                                it.filter { char ->
-                                    char.isDigit()
-                                }
+                            shelfNumber = it
                         },
-                        modifier = Modifier.weight(1f),
+
+                        modifier =
+                            Modifier.weight(1f),
+
                         singleLine = true,
+
                         label = {
                             Text("Raf")
                         },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors
+
+                        placeholder = {
+                            Text(
+                                "Örn: A1, B12, RA-01"
+                            )
+                        },
+
+                        shape =
+                            RoundedCornerShape(12.dp),
+
+                        colors =
+                            fieldColors
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+
+                Text(
+                    text =
+                        "RAF KONUMU",
+
+                    fontSize = 13.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Color.DarkGray
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    SelectionButton(
+                        text = "ÖN",
+
+                        selected =
+                            position.equals(
+                                "ÖN",
+                                ignoreCase = true
+                            ),
+
+                        onClick = {
+                            position = "ÖN"
+                        }
+                    )
+
+                    SelectionButton(
+                        text = "ARKA",
+
+                        selected =
+                            position.equals(
+                                "ARKA",
+                                ignoreCase = true
+                            ),
+
+                        onClick = {
+                            position = "ARKA"
+                        }
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.height(8.dp)
+                )
 
                 OutlinedTextField(
                     value = position,
+
                     onValueChange = {
-                        position = it
+                        position =
+                            it.uppercase()
                     },
-                    modifier = Modifier.fillMaxWidth(),
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
                     singleLine = true,
+
                     label = {
                         Text("Konum")
                     },
+
                     placeholder = {
-                        Text("ÖN veya ARKA")
+                        Text(
+                            "ÖN veya ARKA"
+                        )
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        fieldColors
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        /*
+         * MESAJ
+         */
 
         message?.let {
 
             Text(
                 text = it,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 4.dp
+                        ),
+
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
+
+                fontWeight =
+                    FontWeight.Medium,
+
                 color = DarkRed
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(
+                modifier =
+                    Modifier.height(8.dp)
+            )
         }
+
+        /*
+         * =====================================================
+         * KAYDET
+         * =====================================================
+         */
 
         Button(
             onClick = {
@@ -515,20 +1143,37 @@ fun AddProductScreen(
 
                 val formState =
                     ProductFormState(
-                        productCode = productCode,
-                        systemBarcode = systemBarcode,
-                        color = color,
-                        size = size,
+
+                        productCode =
+                            productCode,
+
+                        systemBarcode =
+                            systemBarcode,
+
+                        color =
+                            color,
+
+                        size =
+                            size,
+
                         quantity =
                             if (quantity.isBlank()) {
                                 "0"
                             } else {
                                 quantity
                             },
-                        rowNumber = rowNumber,
-                        shelfNumber = shelfNumber,
-                        position = position,
-                        photoUri = photoUri?.toString()
+
+                        rowNumber =
+                            rowNumber,
+
+                        shelfNumber =
+                            shelfNumber,
+
+                        position =
+                            position,
+
+                        photoUri =
+                            photoUri?.toString()
                     )
 
                 val product =
@@ -539,7 +1184,7 @@ fun AddProductScreen(
                     product.productCode.isBlank() -> {
 
                         message =
-                            "Ürün kodu boş bırakılamaz."
+                            "Trendyol ürün kodu boş bırakılamaz."
 
                         isSaving = false
                     }
@@ -568,14 +1213,23 @@ fun AddProductScreen(
                     }
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            enabled = !isSaving,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = DarkRed
-            ),
-            shape = RoundedCornerShape(14.dp)
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+
+            enabled =
+                !isSaving,
+
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        DarkRed
+                ),
+
+            shape =
+                RoundedCornerShape(14.dp)
         ) {
 
             Text(
@@ -585,12 +1239,63 @@ fun AddProductScreen(
                     } else {
                         "ÜRÜNÜ KAYDET"
                     },
+
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Color.White
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(
+            modifier =
+                Modifier.height(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun SelectionButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+
+    Button(
+        onClick = onClick,
+
+        colors =
+            ButtonDefaults.buttonColors(
+
+                containerColor =
+                    if (selected) {
+                        DarkRed
+                    } else {
+                        Color.White
+                    },
+
+                contentColor =
+                    if (selected) {
+                        Color.White
+                    } else {
+                        DarkRed
+                    }
+            ),
+
+        shape =
+            RoundedCornerShape(10.dp)
+    ) {
+
+        Text(
+            text = text,
+
+            fontSize = 12.sp,
+
+            fontWeight =
+                FontWeight.Bold
+        )
     }
 }
