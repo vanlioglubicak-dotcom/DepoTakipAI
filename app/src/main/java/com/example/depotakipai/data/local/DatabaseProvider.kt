@@ -17,7 +17,10 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "depo_takip_ai.db"
             )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3
+                )
                 .build()
                 .also {
                     database = it
