@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "inventory_list_items")
 data class InventoryListItemEntity(
+
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
@@ -12,7 +13,7 @@ data class InventoryListItemEntity(
 
     val productCode: String,
 
-    val systemBarcode: String?,
+    val systemBarcode: String? = null,
 
     val color: String,
 
