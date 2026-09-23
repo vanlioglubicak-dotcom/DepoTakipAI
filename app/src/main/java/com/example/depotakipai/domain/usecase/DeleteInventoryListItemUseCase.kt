@@ -1,6 +1,7 @@
 package com.example.depotakipai.domain.usecase
 
 import com.example.depotakipai.data.local.InventoryListDao
+import com.example.depotakipai.data.model.InventoryListItemEntity
 import com.example.depotakipai.domain.model.InventoryListItem
 
 class DeleteInventoryListItemUseCase(
@@ -11,7 +12,7 @@ class DeleteInventoryListItemUseCase(
         item: InventoryListItem
     ) {
         dao.deleteItem(
-            com.example.depotakipai.data.model.InventoryListItemEntity(
+            InventoryListItemEntity(
                 id = item.id,
                 listId = item.listId,
                 productCode = item.productCode,

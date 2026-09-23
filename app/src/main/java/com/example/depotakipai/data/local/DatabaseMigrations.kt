@@ -113,3 +113,33 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         )
     }
 }
+
+
+/**
+ * Version 3 -> 4
+ *
+ * Stok sistemi tablosu ekleniyor.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+
+    override fun migrate(
+        database: SupportSQLiteDatabase
+    ) {
+
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS stocks (
+                productCode TEXT NOT NULL PRIMARY KEY,
+                systemBarcode TEXT,
+                color TEXT NOT NULL,
+                size TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                rowNumber INTEGER,
+                shelfNumber TEXT,
+                position TEXT,
+                updatedAt INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+}
