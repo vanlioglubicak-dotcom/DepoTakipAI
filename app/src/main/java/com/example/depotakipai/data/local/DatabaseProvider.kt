@@ -8,8 +8,12 @@ object DatabaseProvider {
     @Volatile
     private var database: AppDatabase? = null
 
-    fun getDatabase(context: Context): AppDatabase {
+    fun getDatabase(
+        context: Context
+    ): AppDatabase {
+
         return database ?: synchronized(this) {
+
             database ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
@@ -18,7 +22,8 @@ object DatabaseProvider {
                 .addMigrations(
                     MIGRATION_1_2,
                     MIGRATION_2_3,
-                    MIGRATION_3_4
+                    MIGRATION_3_4,
+                    MIGRATION_4_5
                 )
                 .build()
                 .also {

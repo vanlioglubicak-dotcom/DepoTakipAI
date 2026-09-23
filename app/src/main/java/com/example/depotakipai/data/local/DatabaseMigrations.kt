@@ -3,18 +3,11 @@ package com.example.depotakipai.data.local
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-/**
- * Room Database Migrations
- *
- * Version 1 -> 2
- * Product tablosundaki shelfNumber alanının TEXT olması
- */
 val MIGRATION_1_2 = object : Migration(1, 2) {
 
     override fun migrate(
         database: SupportSQLiteDatabase
     ) {
-
         database.execSQL(
             """
             CREATE TABLE products_new (
@@ -71,18 +64,11 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
-
-/**
- * Version 2 -> 3
- *
- * Liste sistemi tabloları ekleniyor.
- */
 val MIGRATION_2_3 = object : Migration(2, 3) {
 
     override fun migrate(
         database: SupportSQLiteDatabase
     ) {
-
         database.execSQL(
             """
             CREATE TABLE IF NOT EXISTS inventory_lists (
@@ -114,18 +100,11 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-
-/**
- * Version 3 -> 4
- *
- * Stok sistemi tablosu ekleniyor.
- */
 val MIGRATION_3_4 = object : Migration(3, 4) {
 
     override fun migrate(
         database: SupportSQLiteDatabase
     ) {
-
         database.execSQL(
             """
             CREATE TABLE IF NOT EXISTS stocks (
@@ -138,6 +117,29 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
                 shelfNumber TEXT,
                 position TEXT,
                 updatedAt INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+}
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+
+    override fun migrate(
+        database: SupportSQLiteDatabase
+    ) {
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS stock_movements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                listId INTEGER NOT NULL,
+                productCode TEXT NOT NULL,
+                color TEXT NOT NULL,
+                size TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                direction TEXT NOT NULL,
+                destination TEXT,
+                createdAt INTEGER NOT NULL
             )
             """.trimIndent()
         )
