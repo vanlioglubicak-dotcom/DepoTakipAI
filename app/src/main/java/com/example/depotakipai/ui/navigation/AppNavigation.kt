@@ -6,6 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.depotakipai.domain.model.WarehouseLocation
+import com.example.depotakipai.domain.model.WarehouseRack
+import com.example.depotakipai.domain.model.WarehouseRow
 import com.example.depotakipai.ui.camera.CameraScanResult
 import com.example.depotakipai.ui.camera.CameraScanScreen
 import com.example.depotakipai.ui.home.HomeScreen
@@ -22,6 +25,9 @@ private enum class AppScreen {
     CAMERA,
     RETURNS,
     WAREHOUSE,
+    WAREHOUSE_ROW,
+    WAREHOUSE_RACK,
+    WAREHOUSE_LOCATION,
     LISTS,
     SETTINGS
 }
@@ -37,9 +43,22 @@ fun AppNavigation() {
         mutableStateOf<CameraScanResult?>(null)
     }
 
+    var selectedRow by remember {
+        mutableStateOf<WarehouseRow?>(null)
+    }
+
+    var selectedRack by remember {
+        mutableStateOf<WarehouseRack?>(null)
+    }
+
+    var selectedLocation by remember {
+        mutableStateOf<WarehouseLocation?>(null)
+    }
+
     BackHandler(
         enabled = currentScreen != AppScreen.HOME
     ) {
+
         currentScreen = when (currentScreen) {
 
             AppScreen.PRODUCTS ->
@@ -56,6 +75,15 @@ fun AppNavigation() {
 
             AppScreen.WAREHOUSE ->
                 AppScreen.HOME
+
+            AppScreen.WAREHOUSE_ROW ->
+                AppScreen.WAREHOUSE
+
+            AppScreen.WAREHOUSE_RACK ->
+                AppScreen.WAREHOUSE_ROW
+
+            AppScreen.WAREHOUSE_LOCATION ->
+                AppScreen.WAREHOUSE_RACK
 
             AppScreen.LISTS ->
                 AppScreen.WAREHOUSE
@@ -77,6 +105,7 @@ fun AppNavigation() {
         AppScreen.HOME -> {
 
             HomeScreen(
+
                 onProductsClick = {
                     currentScreen = AppScreen.PRODUCTS
                 },
@@ -92,6 +121,10 @@ fun AppNavigation() {
 
                 onSettingsClick = {
                     currentScreen = AppScreen.SETTINGS
+                },
+
+                onWarehouseClick = {
+                    currentScreen = AppScreen.WAREHOUSE
                 }
             )
         }
@@ -103,6 +136,7 @@ fun AppNavigation() {
         AppScreen.PRODUCTS -> {
 
             ProductsScreen(
+
                 onBack = {
                     currentScreen = AppScreen.HOME
                 },
@@ -129,6 +163,7 @@ fun AppNavigation() {
         AppScreen.ADD_PRODUCT -> {
 
             AddProductScreen(
+
                 onProductSaved = {
                     cameraResult = null
                     currentScreen = AppScreen.PRODUCTS
@@ -155,11 +190,13 @@ fun AppNavigation() {
         AppScreen.CAMERA -> {
 
             CameraScanScreen(
+
                 onBack = {
                     currentScreen = AppScreen.ADD_PRODUCT
                 },
 
                 onScanResult = { result ->
+
                     cameraResult = result
                     currentScreen = AppScreen.ADD_PRODUCT
                 }
@@ -173,6 +210,7 @@ fun AppNavigation() {
         AppScreen.RETURNS -> {
 
             HomeScreen(
+
                 onProductsClick = {
                     currentScreen = AppScreen.PRODUCTS
                 },
@@ -188,12 +226,16 @@ fun AppNavigation() {
 
                 onSettingsClick = {
                     currentScreen = AppScreen.SETTINGS
+                },
+
+                onWarehouseClick = {
+                    currentScreen = AppScreen.WAREHOUSE
                 }
             )
         }
 
         // =========================================================
-        // DEPO
+        // DEPO ANA EKRANI
         // =========================================================
 
         AppScreen.WAREHOUSE -> {
@@ -213,13 +255,130 @@ fun AppNavigation() {
                 },
 
                 onLocationClick = {
-                    // Raf / konum sistemi sonraki aşamada
                 },
 
                 onStockClick = {
-                    // Stok ekranı sonraki aşamada
+                },
+
+                onRowClick = { row ->
+
+                    selectedRow = row
+                    selectedRack = null
+                    selectedLocation = null
+
+                    currentScreen =
+                        AppScreen.WAREHOUSE_ROW
+                },
+
+                onAddRowClick = {
+                },
+
+                onSearchClick = {
                 }
             )
+        }
+
+        // =========================================================
+        // DEPO SIRA
+        // =========================================================
+
+        AppScreen.WAREHOUSE_ROW -> {
+
+            WarehouseRowNavigation(
+
+                row = selectedRow
+                    ?: WarehouseRow(
+                        rowNumber = 1
+                    ),
+
+                onBack = {
+                    currentScreen =
+                        AppScreen.WAREHOUSE
+                },
+
+                onRackClick = { rack ->
+
+                    selectedRack = rack
+                    selectedLocation = null
+
+                    currentScreen =
+                        AppScreen.WAREHOUSE_RACK
+                },
+
+                onAddRackClick = {
+                }
+            )
+        }
+
+        // =========================================================
+        // DEPO RAF
+        // =========================================================
+
+        AppScreen.WAREHOUSE_RACK -> {
+
+            val rack = selectedRack
+
+            if (rack == null) {
+
+                currentScreen =
+                    AppScreen.WAREHOUSE_ROW
+
+            } else {
+
+                WarehouseRackNavigation(
+
+                    rack = rack,
+
+                    onBack = {
+                        currentScreen =
+                            AppScreen.WAREHOUSE_ROW
+                    },
+
+                    onLocationClick = { location ->
+
+                        selectedLocation = location
+
+                        currentScreen =
+                            AppScreen.WAREHOUSE_LOCATION
+                    },
+
+                    onAddLocationClick = {
+                    }
+                )
+            }
+        }
+
+        // =========================================================
+        // DEPO KONUM
+        // =========================================================
+
+        AppScreen.WAREHOUSE_LOCATION -> {
+
+            val location = selectedLocation
+
+            if (location == null) {
+
+                currentScreen =
+                    AppScreen.WAREHOUSE_RACK
+
+            } else {
+
+                WarehouseLocationNavigation(
+
+                    location = location,
+
+                    onBack = {
+                        currentScreen =
+                            AppScreen.WAREHOUSE_RACK
+                    },
+
+                    onProductClick = {
+                    },
+
+                    onEditClick = {
+                    }
+                )
+            }
         }
 
         // =========================================================
@@ -231,7 +390,8 @@ fun AppNavigation() {
             ListsScreen(
 
                 onBack = {
-                    currentScreen = AppScreen.WAREHOUSE
+                    currentScreen =
+                        AppScreen.WAREHOUSE
                 },
 
                 onCategoryClick = { category ->
@@ -239,23 +399,18 @@ fun AppNavigation() {
                     when (category) {
 
                         ListCategory.ANA_LISTE -> {
-                            // Sonraki aşamada
                         }
 
                         ListCategory.YENI_GELEN -> {
-                            // Sonraki aşamada
                         }
 
                         ListCategory.GIDEN -> {
-                            // Sonraki aşamada
                         }
 
                         ListCategory.GIDEN_IADE -> {
-                            // Sonraki aşamada
                         }
 
                         ListCategory.GELEN_IADE -> {
-                            // Sonraki aşamada
                         }
                     }
                 }
@@ -269,21 +424,31 @@ fun AppNavigation() {
         AppScreen.SETTINGS -> {
 
             HomeScreen(
+
                 onProductsClick = {
-                    currentScreen = AppScreen.PRODUCTS
+                    currentScreen =
+                        AppScreen.PRODUCTS
                 },
 
                 onAddProductClick = {
                     cameraResult = null
-                    currentScreen = AppScreen.ADD_PRODUCT
+                    currentScreen =
+                        AppScreen.ADD_PRODUCT
                 },
 
                 onReturnsClick = {
-                    currentScreen = AppScreen.RETURNS
+                    currentScreen =
+                        AppScreen.RETURNS
                 },
 
                 onSettingsClick = {
-                    currentScreen = AppScreen.SETTINGS
+                    currentScreen =
+                        AppScreen.SETTINGS
+                },
+
+                onWarehouseClick = {
+                    currentScreen =
+                        AppScreen.WAREHOUSE
                 }
             )
         }

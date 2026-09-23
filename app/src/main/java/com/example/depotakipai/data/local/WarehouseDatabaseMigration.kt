@@ -9,9 +9,9 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         database: SupportSQLiteDatabase
     ) {
 
-        // -----------------------------------------------------
+        // =========================================================
         // DEPO SIRALARI
-        // -----------------------------------------------------
+        // =========================================================
 
         database.execSQL(
             """
@@ -27,9 +27,9 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
             """.trimIndent()
         )
 
-        // -----------------------------------------------------
+        // =========================================================
         // DEPO RAFLARI
-        // -----------------------------------------------------
+        // =========================================================
 
         database.execSQL(
             """
@@ -47,9 +47,9 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
             """.trimIndent()
         )
 
-        // -----------------------------------------------------
+        // =========================================================
         // DEPO KONUMLARI
-        // -----------------------------------------------------
+        // =========================================================
 
         database.execSQL(
             """
@@ -67,9 +67,9 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
             """.trimIndent()
         )
 
-        // -----------------------------------------------------
+        // =========================================================
         // DEPO FOTOĞRAFLARI
-        // -----------------------------------------------------
+        // =========================================================
 
         database.execSQL(
             """
@@ -81,45 +81,6 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
                 title TEXT NOT NULL,
                 createdAt INTEGER NOT NULL
             )
-            """.trimIndent()
-        )
-
-        // -----------------------------------------------------
-        // İNDEKSLER
-        // -----------------------------------------------------
-
-        database.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_warehouse_racks_rowId
-            ON warehouse_racks(rowId)
-            """.trimIndent()
-        )
-
-        database.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_warehouse_locations_rackId
-            ON warehouse_locations(rackId)
-            """.trimIndent()
-        )
-
-        database.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_warehouse_locations_locationCode
-            ON warehouse_locations(locationCode)
-            """.trimIndent()
-        )
-
-        database.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_warehouse_photos_rackId
-            ON warehouse_photos(rackId)
-            """.trimIndent()
-        )
-
-        database.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_warehouse_photos_locationId
-            ON warehouse_photos(locationId)
             """.trimIndent()
         )
     }

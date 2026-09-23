@@ -37,7 +37,8 @@ fun HomeScreen(
     onProductsClick: () -> Unit = {},
     onAddProductClick: () -> Unit = {},
     onReturnsClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onWarehouseClick: () -> Unit = {}
 ) {
 
     Box(
@@ -45,10 +46,6 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Background)
     ) {
-
-        // =========================================================
-        // ANA İÇERİK
-        // =========================================================
 
         LazyColumn(
             modifier = Modifier
@@ -79,7 +76,8 @@ fun HomeScreen(
 
                 DashboardGrid(
                     onProductsClick = onProductsClick,
-                    onReturnsClick = onReturnsClick
+                    onReturnsClick = onReturnsClick,
+                    onWarehouseClick = onWarehouseClick
                 )
 
                 Spacer(
@@ -107,10 +105,6 @@ fun HomeScreen(
                 )
             }
         }
-
-        // =========================================================
-        // SABİT ALT MENÜ
-        // =========================================================
 
         BottomNavigationBar(
             modifier = Modifier
@@ -172,7 +166,8 @@ private fun HomeHeader() {
 @Composable
 private fun DashboardGrid(
     onProductsClick: () -> Unit,
-    onReturnsClick: () -> Unit
+    onReturnsClick: () -> Unit,
+    onWarehouseClick: () -> Unit
 ) {
 
     Column(
@@ -213,7 +208,11 @@ private fun DashboardGrid(
         ) {
 
             DashboardCard(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        onWarehouseClick()
+                    },
                 symbol = "⌂",
                 title = "Depo",
                 color = Gray
@@ -339,19 +338,11 @@ private fun BottomNavigationBar(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
 
-            // -----------------------------------------------------
-            // ANA SAYFA
-            // -----------------------------------------------------
-
             BottomNavigationItem(
                 symbol = "⌂",
                 text = "Ana Sayfa",
                 selected = true
             )
-
-            // -----------------------------------------------------
-            // ÜRÜN
-            // -----------------------------------------------------
 
             BottomNavigationItem(
                 modifier = Modifier.clickable {
@@ -361,10 +352,6 @@ private fun BottomNavigationBar(
                 text = "Ürün",
                 selected = false
             )
-
-            // -----------------------------------------------------
-            // MERKEZ + BUTONU
-            // -----------------------------------------------------
 
             Box(
                 modifier = Modifier
@@ -387,10 +374,6 @@ private fun BottomNavigationBar(
                 )
             }
 
-            // -----------------------------------------------------
-            // İADE
-            // -----------------------------------------------------
-
             BottomNavigationItem(
                 modifier = Modifier.clickable {
                     onReturnsClick()
@@ -399,10 +382,6 @@ private fun BottomNavigationBar(
                 text = "İade",
                 selected = false
             )
-
-            // -----------------------------------------------------
-            // AYARLAR
-            // -----------------------------------------------------
 
             BottomNavigationItem(
                 modifier = Modifier.clickable {

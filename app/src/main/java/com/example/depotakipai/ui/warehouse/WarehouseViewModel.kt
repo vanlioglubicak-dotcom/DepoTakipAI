@@ -3,9 +3,11 @@ package com.example.depotakipai.ui.warehouse
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.depotakipai.domain.model.WarehouseLocation
 import com.example.depotakipai.domain.model.WarehouseRack
 import com.example.depotakipai.domain.model.WarehouseRow
 import com.example.depotakipai.domain.repository.WarehouseRepositoryProvider
+import com.example.depotakipai.domain.usecase.warehouse.GetWarehouseLocationsUseCase
 import com.example.depotakipai.domain.usecase.warehouse.GetWarehouseStructureUseCase
 import com.example.depotakipai.domain.usecase.warehouse.InitializeWarehouseUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,11 @@ class WarehouseViewModel(
 
     private val getWarehouseStructureUseCase =
         GetWarehouseStructureUseCase(
+            warehouseRepository = repository
+        )
+
+    private val getWarehouseLocationsUseCase =
+        GetWarehouseLocationsUseCase(
             warehouseRepository = repository
         )
 
@@ -97,5 +104,28 @@ class WarehouseViewModel(
 
         return _uiState.value.racks[rowId]
             ?: emptyList()
+    }
+
+    fun getLocationsForRack(
+        rackId: Long,
+        onResult: (List<WarehouseLocation>) -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val locations =
+                    getWarehouseLocationsUseCase(
+                        rackId = rackId
+                    )
+
+                onResult(locations)
+
+            } catch (exception: Exception) {
+
+                onResult(emptyList())
+            }
+        }
     }
 }
