@@ -11,10 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,23 +22,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.depotakipai.domain.model.IncomingReturnAnalysisResult
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-private val ReviewBackground = Color(0xFFF5F5F5)
-private val ReviewAccent = Color(0xFF8B0000)
-private val ReviewBlue = Color(0xFF4682B4)
+private val IncomingBackground = Color(0xFFF5F5F5)
+private val IncomingAccent = Color(0xFF8B0000)
+private val IncomingSecondary = Color(0xFF4682B4)
 
 @Composable
-fun IncomingReturnReviewScreen(
-    result: IncomingReturnAnalysisResult,
+fun IncomingReturnScreen(
     onBack: () -> Unit = {},
-    onEdit: () -> Unit = {},
-    onConfirm: () -> Unit = {}
+    onCameraClick: () -> Unit = {},
+    onManualEntryClick: () -> Unit = {}
 ) {
+    val dateText = SimpleDateFormat(
+        "dd MMMM yyyy",
+        Locale("tr", "TR")
+    ).format(Date())
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ReviewBackground)
+            .background(IncomingBackground)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(
@@ -49,20 +54,38 @@ fun IncomingReturnReviewScreen(
                 bottom = 12.dp
             )
     ) {
-        Text(
-            text = "İade Kontrolü",
-            color = ReviewAccent,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Gelen İade",
+                    color = IncomingAccent,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
 
-        Spacer(
-            modifier = Modifier.height(4.dp)
-        )
+                Spacer(
+                    modifier = Modifier.height(4.dp)
+                )
 
-        Text(
-            text = "Kayıt yapılmadan önce bilgileri kontrol edin.",
-            color = Color.Gray
-        )
+                Text(
+                    text = "Gelen ürünleri kameradan analiz edin veya manuel olarak ekleyin.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Text(
+                text = dateText,
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         Spacer(
             modifier = Modifier.height(18.dp)
@@ -70,7 +93,6 @@ fun IncomingReturnReviewScreen(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
             ),
@@ -80,132 +102,95 @@ fun IncomingReturnReviewScreen(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                ReviewRow(
-                    label = "Ürün Kodu",
-                    value = result.productCode ?: "Belirlenemedi"
+                Text(
+                    text = "İade Ürünü Ekle",
+                    color = Color.DarkGray,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
 
-                ReviewRow(
-                    label = "Sistem Barkodu",
-                    value = result.systemBarcode ?: "Belirlenmedi"
+                Text(
+                    text = "İade etiketini kamerayla okutun. Ürün kodu, renk ve beden bilgileri analiz edilecektir.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
                 )
 
-                ReviewRow(
-                    label = "Renk",
-                    value = result.color ?: "Belirlenmedi"
-                )
-
-                ReviewRow(
-                    label = "Beden",
-                    value = result.size ?: "Belirlenmedi"
-                )
-
-                ReviewRow(
-                    label = "Adet",
-                    value = result.quantity?.toString()
-                        ?: "Belirlenmedi"
-                )
-
-                ReviewRow(
-                    label = "Kaynak",
-                    value = result.source?.name
-                        ?: "Belirtilmedi"
-                )
+                OutlinedButton(
+                    onClick = onCameraClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                ) {
+                    Text(
+                        text = "KAMERA İLE ANALİZ ET",
+                        color = IncomingAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
         Spacer(
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(10.dp)
         )
 
-        if (result.requiresManualReview) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFF7E6)
-                )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Bazı bilgiler otomatik olarak belirlenemedi. "
-                            + "Kaydetmeden önce düzenleyin.",
-                    modifier = Modifier.padding(14.dp),
-                    color = Color(0xFF7A5700)
+                    text = "Manuel İade",
+                    color = Color.DarkGray,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-            }
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+                Text(
+                    text = "Etiket okunamıyorsa ürün bilgilerini kendiniz girebilirsiniz.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                OutlinedButton(
+                    onClick = onManualEntryClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                ) {
+                    Text(
+                        text = "MANUEL EKLE",
+                        color = IncomingSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
 
         Spacer(
             modifier = Modifier.weight(1f)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .height(38.dp)
         ) {
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.height(40.dp)
-            ) {
-                Text(text = "GERİ")
-            }
-
-            Spacer(
-                modifier = Modifier.width(10.dp)
+            Text(
+                text = "GERİ",
+                style = MaterialTheme.typography.labelMedium
             )
-
-            OutlinedButton(
-                onClick = onEdit,
-                modifier = Modifier.height(40.dp)
-            ) {
-                Text(
-                    text = "DÜZENLE",
-                    color = ReviewBlue
-                )
-            }
-
-            Spacer(
-                modifier = Modifier.width(10.dp)
-            )
-
-            OutlinedButton(
-                onClick = onConfirm,
-                modifier = Modifier.height(40.dp)
-            ) {
-                Text(
-                    text = "ONAYLA",
-                    color = ReviewAccent
-                )
-            }
         }
-    }
-}
-
-@Composable
-private fun ReviewRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium
-        )
-
-        Text(
-            text = value,
-            color = Color.DarkGray,
-            fontWeight = FontWeight.SemiBold
-        )
     }
 }

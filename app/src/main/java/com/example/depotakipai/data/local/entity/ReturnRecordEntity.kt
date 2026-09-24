@@ -3,9 +3,14 @@ package com.example.depotakipai.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "return_records")
+@Entity(
+    tableName = "return_records"
+)
 data class ReturnRecordEntity(
-    @PrimaryKey(autoGenerate = true)
+
+    @PrimaryKey(
+        autoGenerate = true
+    )
     val id: Long = 0L,
 
     val type: String,
