@@ -25,6 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
@@ -40,7 +43,6 @@ fun HomeScreen(
     onSettingsClick: () -> Unit = {},
     onWarehouseClick: () -> Unit = {}
 ) {
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -125,6 +127,11 @@ fun HomeScreen(
 @Composable
 private fun HomeHeader() {
 
+    val dateText = SimpleDateFormat(
+        "dd MMMM yyyy",
+        Locale("tr", "TR")
+    ).format(Date())
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -152,7 +159,7 @@ private fun HomeHeader() {
         }
 
         Text(
-            text = "15:xx",
+            text = dateText,
             fontSize = 13.sp,
             color = Gray
         )

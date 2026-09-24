@@ -16,6 +16,7 @@ import com.example.depotakipai.ui.lists.ListCategory
 import com.example.depotakipai.ui.lists.ListsScreen
 import com.example.depotakipai.ui.products.AddProductScreen
 import com.example.depotakipai.ui.products.ProductsScreen
+import com.example.depotakipai.ui.returns.ReturnsScreen
 import com.example.depotakipai.ui.warehouse.WarehouseScreen
 
 private enum class AppScreen {
@@ -58,7 +59,6 @@ fun AppNavigation() {
     BackHandler(
         enabled = currentScreen != AppScreen.HOME
     ) {
-
         currentScreen = when (currentScreen) {
 
             AppScreen.PRODUCTS ->
@@ -209,27 +209,18 @@ fun AppNavigation() {
 
         AppScreen.RETURNS -> {
 
-            HomeScreen(
+            ReturnsScreen(
 
-                onProductsClick = {
-                    currentScreen = AppScreen.PRODUCTS
+                onBack = {
+                    currentScreen = AppScreen.HOME
                 },
 
-                onAddProductClick = {
-                    cameraResult = null
-                    currentScreen = AppScreen.ADD_PRODUCT
+                onIncomingReturnClick = {
+                    // Bir sonraki adımda Gelen İade ekranına bağlanacak.
                 },
 
-                onReturnsClick = {
-                    currentScreen = AppScreen.RETURNS
-                },
-
-                onSettingsClick = {
-                    currentScreen = AppScreen.SETTINGS
-                },
-
-                onWarehouseClick = {
-                    currentScreen = AppScreen.WAREHOUSE
+                onOutgoingReturnClick = {
+                    // Bir sonraki adımda Giden İade ekranına bağlanacak.
                 }
             )
         }

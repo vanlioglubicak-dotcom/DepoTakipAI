@@ -2,6 +2,8 @@ package com.example.depotakipai.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.example.depotakipai.data.local.dao.ReturnDao
+import com.example.depotakipai.data.local.entity.ReturnRecordEntity
 import com.example.depotakipai.data.model.InventoryListEntity
 import com.example.depotakipai.data.model.InventoryListItemEntity
 import com.example.depotakipai.data.model.ProductEntity
@@ -22,9 +24,10 @@ import com.example.depotakipai.data.model.WarehouseRowEntity
         WarehouseRowEntity::class,
         WarehouseRackEntity::class,
         WarehouseLocationEntity::class,
-        WarehousePhotoEntity::class
+        WarehousePhotoEntity::class,
+        ReturnRecordEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,4 +41,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun stockMovementDao(): StockMovementDao
 
     abstract fun warehouseDao(): WarehouseDao
+
+    abstract fun returnDao(): ReturnDao
 }
