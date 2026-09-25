@@ -234,7 +234,11 @@ fun AppNavigation() {
 
         AppScreen.INCOMING_RETURN -> {
 
+            val database =
+                DatabaseProvider.getDatabase(context)
+
             IncomingReturnScreen(
+                database = database,
                 onBack = {
                     currentScreen = AppScreen.RETURNS
                 }
@@ -285,6 +289,7 @@ fun AppNavigation() {
             if (result == null) {
 
                 IncomingReturnScreen(
+                    database = database,
                     onBack = {
                         currentScreen =
                             AppScreen.INCOMING_RETURN

@@ -22,11 +22,12 @@ fun IncomingReturnReviewScreen(
     onEdit: () -> Unit = {},
     onConfirmSuccess: () -> Unit = {}
 ) {
-    val viewModel: IncomingReturnViewModel = viewModel(
-        factory = IncomingReturnViewModelFactory(
-            database = database
+    val viewModel: IncomingReturnViewModel =
+        viewModel(
+            factory = IncomingReturnViewModelFactory(
+                database = database
+            )
         )
-    )
 
     val saveSuccess by viewModel.saveSuccess
         .collectAsStateWithLifecycle()
@@ -36,6 +37,12 @@ fun IncomingReturnReviewScreen(
 
     LaunchedEffect(result) {
         viewModel.setAnalysisResult(result)
+    }
+
+    LaunchedEffect(saveSuccess) {
+        if (saveSuccess != null) {
+            onConfirmSuccess()
+        }
     }
 
     if (saveSuccess != null) {
@@ -57,7 +64,11 @@ fun IncomingReturnReviewScreen(
         result = result,
         onBack = onBack,
         onConfirm = { currentResult ->
-            viewModel.setAnalysisResult(currentResult)
+
+            viewModel.setAnalysisResult(
+                currentResult
+            )
+
             viewModel.confirmReturn()
         }
     )

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.depotakipai.data.local.AppDatabase
 import com.example.depotakipai.data.repository.ReturnRepositoryProvider
+import com.example.depotakipai.domain.usecase.returns.GetIncomingReturnsUseCase
 import com.example.depotakipai.domain.usecase.returns.SaveIncomingReturnUseCase
 
 class IncomingReturnViewModelFactory(
@@ -31,9 +32,16 @@ class IncomingReturnViewModelFactory(
                     returnRepository = repository
                 )
 
+            val getIncomingReturnsUseCase =
+                GetIncomingReturnsUseCase(
+                    returnRepository = repository
+                )
+
             return IncomingReturnViewModel(
                 saveIncomingReturnUseCase =
-                    saveIncomingReturnUseCase
+                    saveIncomingReturnUseCase,
+                getIncomingReturnsUseCase =
+                    getIncomingReturnsUseCase
             ) as T
         }
 
