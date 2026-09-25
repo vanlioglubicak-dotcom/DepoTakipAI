@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -62,7 +63,8 @@ private val Gray = Color(0xFF808080)
 @Composable
 fun CameraScanScreen(
     onBack: () -> Unit = {},
-    onScanResult: (CameraScanResult) -> Unit = {}
+    onScanResult: (CameraScanResult) -> Unit = {},
+    mode: CameraScanMode = CameraScanMode.PRODUCT
 ) {
 
     val context = LocalContext.current
@@ -284,6 +286,9 @@ fun CameraScanScreen(
                                                 context =
                                                     viewContext,
 
+                                                mode =
+                                                    mode,
+
                                                 onBitmapReady = { bitmap ->
 
                                                     capturedBitmap =
@@ -400,6 +405,9 @@ fun CameraScanScreen(
                         capturedBitmap != null ->
                             "FOTOĞRAF"
 
+                        mode == CameraScanMode.INCOMING_RETURN ->
+                            "GELEN İADE"
+
                         else ->
                             "ETİKET OKU"
                     },
@@ -449,7 +457,13 @@ fun CameraScanScreen(
             Text(
 
                 text =
-                    "Etiketi kameraya gösterin",
+                    if (
+                        mode == CameraScanMode.INCOMING_RETURN
+                    ) {
+                        "İade etiketini kameraya gösterin"
+                    } else {
+                        "Etiketi kameraya gösterin"
+                    },
 
                 modifier =
                     Modifier
@@ -555,9 +569,8 @@ fun CameraScanScreen(
                     onClick = {
 
                         /*
-                         * Fotoğrafı sil.
-                         *
-                         * Kamerayı yeniden başlat.
+                         * Geçici bitmap bellekte tutuluyor.
+                         * Kamera yeniden başlatılıyor.
                          */
 
                         capturedBitmap =
@@ -748,9 +761,95 @@ fun CameraScanScreen(
 private fun capturePhoto(
     imageCapture: ImageCapture,
     context: Context,
+    mode: CameraScanMode,
     onBitmapReady: (Bitmap) -> Unit,
     onError: () -> Unit
 ) {
+
+    /*
+     * GELEN İADE MODU
+     *
+     * Fotoğraf MediaStore'a kaydedilmez.
+     *
+     * Bunun yerine uygulamanın geçici cache klasörüne
+     * alınır, bitmap olarak okunur ve hemen silinir.
+     */
+
+    if (mode == CameraScanMode.INCOMING_RETURN) {
+
+        val temporaryFile =
+            File(
+                context.cacheDir,
+                "incoming_return_scan.jpg"
+            )
+
+        val outputOptions =
+            ImageCapture.OutputFileOptions
+                .Builder(
+                    temporaryFile
+                )
+                .build()
+
+        imageCapture.takePicture(
+
+            outputOptions,
+
+            ContextCompat.getMainExecutor(context),
+
+            object :
+                ImageCapture.OnImageSavedCallback {
+
+                override fun onImageSaved(
+                    outputFileResults:
+                    ImageCapture.OutputFileResults
+                ) {
+
+                    try {
+
+                        val bitmap =
+                            BitmapFactory.decodeFile(
+                                temporaryFile.absolutePath
+                            )
+
+                        temporaryFile.delete()
+
+                        if (bitmap != null) {
+
+                            onBitmapReady(
+                                bitmap
+                            )
+
+                        } else {
+
+                            onError()
+                        }
+
+                    } catch (_: Exception) {
+
+                        temporaryFile.delete()
+
+                        onError()
+                    }
+                }
+
+                override fun onError(
+                    exception:
+                    ImageCaptureException
+                ) {
+
+                    temporaryFile.delete()
+
+                    onError()
+                }
+            }
+        )
+
+        return
+    }
+
+    // =========================================================
+    // ANA ÜRÜN MODU
+    // =========================================================
 
     val fileName =
         "depo_etiket_${

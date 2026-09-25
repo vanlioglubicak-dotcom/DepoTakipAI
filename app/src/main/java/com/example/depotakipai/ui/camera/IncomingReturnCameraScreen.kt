@@ -1,7 +1,9 @@
 package com.example.depotakipai.ui.camera
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -42,6 +44,9 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun IncomingReturnCameraScreen(
@@ -64,6 +69,10 @@ fun IncomingReturnCameraScreen(
         mutableStateOf<ImageCapture?>(null)
     }
 
+    var isCapturing by remember {
+        mutableStateOf(false)
+    }
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
@@ -73,7 +82,9 @@ fun IncomingReturnCameraScreen(
 
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
+            permissionLauncher.launch(
+                Manifest.permission.CAMERA
+            )
         }
     }
 
@@ -89,10 +100,14 @@ fun IncomingReturnCameraScreen(
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { viewContext ->
-                    val previewView = PreviewView(viewContext)
+
+                    val previewView =
+                        PreviewView(viewContext)
 
                     val cameraProviderFuture =
-                        ProcessCameraProvider.getInstance(viewContext)
+                        ProcessCameraProvider.getInstance(
+                            viewContext
+                        )
 
                     cameraProviderFuture.addListener(
                         {
@@ -100,7 +115,8 @@ fun IncomingReturnCameraScreen(
                                 cameraProviderFuture.get()
 
                             val preview =
-                                androidx.camera.core.Preview.Builder()
+                                androidx.camera.core.Preview
+                                    .Builder()
                                     .build()
                                     .also {
                                         it.surfaceProvider =
@@ -110,7 +126,8 @@ fun IncomingReturnCameraScreen(
                             val capture =
                                 ImageCapture.Builder()
                                     .setCaptureMode(
-                                        ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+                                        ImageCapture
+                                            .CAPTURE_MODE_MINIMIZE_LATENCY
                                     )
                                     .build()
 
@@ -125,7 +142,9 @@ fun IncomingReturnCameraScreen(
                                 capture
                             )
                         },
-                        ContextCompat.getMainExecutor(viewContext)
+                        ContextCompat.getMainExecutor(
+                            viewContext
+                        )
                     )
 
                     previewView
@@ -169,11 +188,15 @@ fun IncomingReturnCameraScreen(
                         end = 20.dp,
                         bottom = 18.dp
                     ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
+
                 OutlinedButton(
-                    onClick = onBack
+                    onClick = onBack,
+                    enabled = !isCapturing
                 ) {
                     Text(
                         text = "GERİ",
@@ -183,41 +206,114 @@ fun IncomingReturnCameraScreen(
 
                 Button(
                     onClick = {
-                        val capture = imageCapture ?: return@Button
+
+                        val capture =
+                            imageCapture
+                                ?: return@Button
+
+                        if (isCapturing) {
+                            return@Button
+                        }
+
+                        isCapturing = true
+
+                        val fileName =
+                            "gelen_iade_" +
+                                    SimpleDateFormat(
+                                        "yyyyMMdd_HHmmss",
+                                        Locale.US
+                                    ).format(Date()) +
+                                    ".jpg"
+
+                        val contentValues =
+                            ContentValues().apply {
+                                put(
+                                    MediaStore.Images.Media.DISPLAY_NAME,
+                                    fileName
+                                )
+
+                                put(
+                                    MediaStore.Images.Media.MIME_TYPE,
+                                    "image/jpeg"
+                                )
+
+                                put(
+                                    MediaStore.Images.Media.RELATIVE_PATH,
+                                    "Pictures/DepoTakipAI/GelenIadeler"
+                                )
+                            }
+
+                        val outputOptions =
+                            ImageCapture.OutputFileOptions
+                                .Builder(
+                                    context.contentResolver,
+                                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                    contentValues
+                                )
+                                .build()
 
                         capture.takePicture(
-                            ContextCompat.getMainExecutor(context),
-                            object : ImageCapture.OnImageCapturedCallback() {
+                            outputOptions,
+                            ContextCompat.getMainExecutor(
+                                context
+                            ),
+                            object :
+                                ImageCapture.OnImageSavedCallback {
 
-                                override fun onCaptureSuccess(
-                                    image: androidx.camera.core.ImageProxy
+                                override fun onImageSaved(
+                                    outputFileResults:
+                                    ImageCapture
+                                    .OutputFileResults
                                 ) {
-                                    image.close()
+                                    isCapturing = false
+
+                                    val savedUri =
+                                        outputFileResults.savedUri
+
+                                    if (
+                                        savedUri != null
+                                    ) {
+                                        onPhotoCaptured(
+                                            savedUri.toString()
+                                        )
+                                    }
                                 }
 
                                 override fun onError(
-                                    exception: ImageCaptureException
+                                    exception:
+                                    ImageCaptureException
                                 ) {
+                                    isCapturing = false
                                 }
                             }
                         )
                     },
+                    enabled = !isCapturing,
                     modifier = Modifier.size(68.dp),
                     shape = CircleShape
                 ) {
                     Text(
-                        text = "ÇEK"
+                        text = if (isCapturing) {
+                            "..."
+                        } else {
+                            "ÇEK"
+                        }
                     )
                 }
             }
+
         } else {
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                horizontalAlignment =
+                    Alignment.CenterHorizontally,
+                verticalArrangement =
+                    Arrangement.Center
             ) {
+
                 Text(
                     text = "Kamera izni gerekli",
                     color = Color.White
@@ -268,6 +364,7 @@ private fun CameraGuideOverlay() {
             ),
         contentAlignment = Alignment.Center
     ) {
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -278,12 +375,15 @@ private fun CameraGuideOverlay() {
                     Color.Transparent
                 )
         ) {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
             ) {
+
                 Text(
                     text = "ETİKETİ BURAYA GETİRİN",
                     color = Color.White

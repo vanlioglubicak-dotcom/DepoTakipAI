@@ -1,4 +1,4 @@
-package com.depotakipai
+package com.example.depotakipai
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,12 +14,15 @@ import com.example.depotakipai.ui.theme.DepoTakipAITheme
 
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
         setContent {
+
             DepoTakipAITheme {
 
                 var showSplash by remember {
