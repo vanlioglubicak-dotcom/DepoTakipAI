@@ -15,16 +15,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.depotakipai.ui.components.BottomNavigationBar
+import com.example.depotakipai.ui.components.BottomNavigationItemType
+import com.example.depotakipai.ui.components.QuickActionMenu
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -41,8 +47,14 @@ fun HomeScreen(
     onAddProductClick: () -> Unit = {},
     onReturnsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onWarehouseClick: () -> Unit = {}
+    onWarehouseClick: () -> Unit = {},
+    onIncomingReturnClick: () -> Unit = {},
+    onOutgoingReturnClick: () -> Unit = {}
 ) {
+    var quickActionVisible by remember {
+        mutableStateOf(false)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -57,7 +69,7 @@ fun HomeScreen(
                     start = 16.dp,
                     end = 16.dp
                 )
-                .padding(bottom = 96.dp),
+                .padding(bottom = 110.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
 
@@ -108,14 +120,46 @@ fun HomeScreen(
             }
         }
 
+        if (quickActionVisible) {
+            QuickActionMenu(
+                visible = true,
+                onNewProductClick = {
+                    quickActionVisible = false
+                    onAddProductClick()
+                },
+                onIncomingReturnClick = {
+                    quickActionVisible = false
+                    onIncomingReturnClick()
+                },
+                onOutgoingReturnClick = {
+                    quickActionVisible = false
+                    onOutgoingReturnClick()
+                }
+            )
+        }
+
         BottomNavigationBar(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding(),
-            onProductsClick = onProductsClick,
-            onAddProductClick = onAddProductClick,
-            onReturnsClick = onReturnsClick,
-            onSettingsClick = onSettingsClick
+                .align(Alignment.BottomCenter),
+            selectedItem = BottomNavigationItemType.HOME,
+            onHomeClick = {
+                quickActionVisible = false
+            },
+            onProductsClick = {
+                quickActionVisible = false
+                onProductsClick()
+            },
+            onQuickActionClick = {
+                quickActionVisible = !quickActionVisible
+            },
+            onReturnsClick = {
+                quickActionVisible = false
+                onReturnsClick()
+            },
+            onSettingsClick = {
+                quickActionVisible = false
+                onSettingsClick()
+            }
         )
     }
 }
@@ -313,137 +357,6 @@ private fun EmptyOperationsCard() {
             text = "Henüz işlem bulunmuyor.",
             fontSize = 14.sp,
             color = Gray
-        )
-    }
-}
-
-// =================================================================
-// ALT MENÜ
-// =================================================================
-
-@Composable
-private fun BottomNavigationBar(
-    modifier: Modifier = Modifier,
-    onProductsClick: () -> Unit,
-    onAddProductClick: () -> Unit,
-    onReturnsClick: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(76.dp)
-            .background(Color.White)
-    ) {
-
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-
-            BottomNavigationItem(
-                symbol = "⌂",
-                text = "Ana Sayfa",
-                selected = true
-            )
-
-            BottomNavigationItem(
-                modifier = Modifier.clickable {
-                    onProductsClick()
-                },
-                symbol = "▣",
-                text = "Ürün",
-                selected = false
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(58.dp)
-                    .clickable {
-                        onAddProductClick()
-                    }
-                    .background(
-                        color = DarkRed,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-
-                Text(
-                    text = "+",
-                    fontSize = 32.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.Light
-                )
-            }
-
-            BottomNavigationItem(
-                modifier = Modifier.clickable {
-                    onReturnsClick()
-                },
-                symbol = "↩",
-                text = "İade",
-                selected = false
-            )
-
-            BottomNavigationItem(
-                modifier = Modifier.clickable {
-                    onSettingsClick()
-                },
-                symbol = "⚙",
-                text = "Ayarlar",
-                selected = false
-            )
-        }
-    }
-}
-
-// =================================================================
-// ALT MENÜ ELEMANI
-// =================================================================
-
-@Composable
-private fun BottomNavigationItem(
-    modifier: Modifier = Modifier,
-    symbol: String,
-    text: String,
-    selected: Boolean
-) {
-
-    Column(
-        modifier = modifier.padding(
-            horizontal = 8.dp,
-            vertical = 6.dp
-        ),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = symbol,
-            fontSize = 21.sp,
-            color = if (selected) {
-                DarkRed
-            } else {
-                Gray
-            }
-        )
-
-        Spacer(
-            modifier = Modifier.height(3.dp)
-        )
-
-        Text(
-            text = text,
-            fontSize = 10.sp,
-            color = if (selected) {
-                DarkRed
-            } else {
-                Gray
-            }
         )
     }
 }
