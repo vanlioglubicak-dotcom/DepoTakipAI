@@ -6,25 +6,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val DarkRed = Color(0xFF8B0000)
-private val SteelBlue = Color(0xFF4682B4)
 private val Gray = Color(0xFF808080)
 private val TextDark = Color(0xFF222222)
 
@@ -41,19 +39,19 @@ fun BottomNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = 10.dp
+            )
             .background(Color.White)
             .navigationBarsPadding()
-            .padding(
-                start = 8.dp,
-                end = 8.dp,
-                top = 8.dp,
-                bottom = 6.dp
-            )
+            .height(78.dp)
+            .padding(horizontal = 8.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
 
             NavigationItem(
@@ -107,9 +105,10 @@ private fun NavigationItem(
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 3.dp),
+            .padding(vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Text(
             text = symbol,
             fontSize = 22.sp,
@@ -123,10 +122,6 @@ private fun NavigationItem(
             } else {
                 Gray
             }
-        )
-
-        Spacer(
-            modifier = Modifier.height(3.dp)
         )
 
         Text(
@@ -152,20 +147,25 @@ private fun QuickActionButton(
     onClick: () -> Unit
 ) {
     Box(
-        modifier = modifier
-            .padding(horizontal = 6.dp),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
+
         Box(
             modifier = Modifier
                 .size(58.dp)
-                .clickable(onClick = onClick)
+                .shadow(
+                    elevation = 8.dp,
+                    shape = CircleShape
+                )
                 .background(
                     color = DarkRed,
                     shape = CircleShape
-                ),
+                )
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
+
             Text(
                 text = "+",
                 fontSize = 32.sp,

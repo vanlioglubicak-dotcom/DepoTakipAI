@@ -1,11 +1,15 @@
 package com.example.depotakipai.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.depotakipai.data.local.DatabaseProvider
 import com.example.depotakipai.domain.model.IncomingReturnAnalysisResult
@@ -15,6 +19,9 @@ import com.example.depotakipai.domain.model.WarehouseRow
 import com.example.depotakipai.ui.camera.CameraScanMode
 import com.example.depotakipai.ui.camera.CameraScanResult
 import com.example.depotakipai.ui.camera.CameraScanScreen
+import com.example.depotakipai.ui.components.BottomNavigationBar
+import com.example.depotakipai.ui.components.BottomNavigationItemType
+import com.example.depotakipai.ui.components.QuickActionMenu
 import com.example.depotakipai.ui.home.HomeScreen
 import com.example.depotakipai.ui.lists.ListCategory
 import com.example.depotakipai.ui.lists.ListsScreen
@@ -53,6 +60,10 @@ fun AppNavigation() {
         mutableStateOf(AppScreen.HOME)
     }
 
+    var quickActionVisible by remember {
+        mutableStateOf(false)
+    }
+
     var cameraResult by remember {
         mutableStateOf<CameraScanResult?>(null)
     }
@@ -74,558 +85,599 @@ fun AppNavigation() {
     }
 
     BackHandler(
-        enabled = currentScreen != AppScreen.HOME
+        enabled = currentScreen != AppScreen.HOME ||
+                quickActionVisible
     ) {
-        currentScreen = when (currentScreen) {
 
-            AppScreen.PRODUCTS ->
-                AppScreen.HOME
+        if (quickActionVisible) {
 
-            AppScreen.ADD_PRODUCT ->
-                AppScreen.PRODUCTS
+            quickActionVisible = false
 
-            AppScreen.CAMERA ->
-                AppScreen.ADD_PRODUCT
+        } else {
 
-            AppScreen.RETURNS ->
-                AppScreen.HOME
+            currentScreen = when (currentScreen) {
 
-            AppScreen.INCOMING_RETURN ->
-                AppScreen.RETURNS
+                AppScreen.PRODUCTS ->
+                    AppScreen.HOME
 
-            AppScreen.INCOMING_RETURN_CAMERA ->
-                AppScreen.INCOMING_RETURN
+                AppScreen.ADD_PRODUCT ->
+                    AppScreen.PRODUCTS
 
-            AppScreen.INCOMING_RETURN_REVIEW ->
-                AppScreen.INCOMING_RETURN
+                AppScreen.CAMERA ->
+                    AppScreen.ADD_PRODUCT
 
-            AppScreen.OUTGOING_RETURN ->
-                AppScreen.RETURNS
+                AppScreen.RETURNS ->
+                    AppScreen.HOME
 
-            AppScreen.WAREHOUSE ->
-                AppScreen.HOME
+                AppScreen.INCOMING_RETURN ->
+                    AppScreen.RETURNS
 
-            AppScreen.WAREHOUSE_ROW ->
-                AppScreen.WAREHOUSE
+                AppScreen.INCOMING_RETURN_CAMERA ->
+                    AppScreen.INCOMING_RETURN
 
-            AppScreen.WAREHOUSE_RACK ->
-                AppScreen.WAREHOUSE_ROW
+                AppScreen.INCOMING_RETURN_REVIEW ->
+                    AppScreen.INCOMING_RETURN
 
-            AppScreen.WAREHOUSE_LOCATION ->
-                AppScreen.WAREHOUSE_RACK
+                AppScreen.OUTGOING_RETURN ->
+                    AppScreen.RETURNS
 
-            AppScreen.LISTS ->
-                AppScreen.WAREHOUSE
+                AppScreen.WAREHOUSE ->
+                    AppScreen.HOME
 
-            AppScreen.SETTINGS ->
-                AppScreen.HOME
+                AppScreen.WAREHOUSE_ROW ->
+                    AppScreen.WAREHOUSE
 
-            AppScreen.HOME ->
-                AppScreen.HOME
+                AppScreen.WAREHOUSE_RACK ->
+                    AppScreen.WAREHOUSE_ROW
+
+                AppScreen.WAREHOUSE_LOCATION ->
+                    AppScreen.WAREHOUSE_RACK
+
+                AppScreen.LISTS ->
+                    AppScreen.WAREHOUSE
+
+                AppScreen.SETTINGS ->
+                    AppScreen.HOME
+
+                AppScreen.HOME ->
+                    AppScreen.HOME
+            }
         }
     }
 
-    when (currentScreen) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
         // =========================================================
-        // ANA SAYFA
+        // SAYFA İÇERİĞİ
         // =========================================================
 
-        AppScreen.HOME -> {
+        when (currentScreen) {
 
-            HomeScreen(
+            AppScreen.HOME -> {
 
-                onProductsClick = {
-                    currentScreen = AppScreen.PRODUCTS
-                },
-
-                onAddProductClick = {
-                    cameraResult = null
-                    currentScreen = AppScreen.ADD_PRODUCT
-                },
-
-                onReturnsClick = {
-                    currentScreen = AppScreen.RETURNS
-                },
-
-                onSettingsClick = {
-                    currentScreen = AppScreen.SETTINGS
-                },
-
-                onWarehouseClick = {
-                    currentScreen = AppScreen.WAREHOUSE
-                },
-
-                onIncomingReturnClick = {
-                    incomingReturnAnalysisResult = null
-                    currentScreen = AppScreen.INCOMING_RETURN
-                },
-
-                onOutgoingReturnClick = {
-                    currentScreen = AppScreen.OUTGOING_RETURN
-                }
-            )
-        }
-
-        // =========================================================
-        // ÜRÜNLER
-        // =========================================================
-
-        AppScreen.PRODUCTS -> {
-
-            ProductsScreen(
-
-                onBack = {
-                    currentScreen = AppScreen.HOME
-                },
-
-                onAddProduct = {
-                    cameraResult = null
-                    currentScreen = AppScreen.ADD_PRODUCT
-                },
-
-                onReturnsClick = {
-                    currentScreen = AppScreen.RETURNS
-                },
-
-                onSettingsClick = {
-                    currentScreen = AppScreen.SETTINGS
-                }
-            )
-        }
-
-        // =========================================================
-        // YENİ ÜRÜN
-        // =========================================================
-
-        AppScreen.ADD_PRODUCT -> {
-
-            AddProductScreen(
-
-                onProductSaved = {
-                    cameraResult = null
-                    currentScreen = AppScreen.PRODUCTS
-                },
-
-                onBack = {
-                    cameraResult = null
-                    currentScreen = AppScreen.PRODUCTS
-                },
-
-                onCameraClick = {
-                    cameraResult = null
-                    currentScreen = AppScreen.CAMERA
-                },
-
-                cameraResult = cameraResult
-            )
-        }
-
-        // =========================================================
-        // ÜRÜN KAMERASI
-        // =========================================================
-
-        AppScreen.CAMERA -> {
-
-            CameraScanScreen(
-
-                mode = CameraScanMode.PRODUCT,
-
-                onBack = {
-                    currentScreen = AppScreen.ADD_PRODUCT
-                },
-
-                onScanResult = { result ->
-
-                    cameraResult = result
-                    currentScreen = AppScreen.ADD_PRODUCT
-                }
-            )
-        }
-
-        // =========================================================
-        // İADELER
-        // =========================================================
-
-        AppScreen.RETURNS -> {
-
-            ReturnsScreen(
-
-                onBack = {
-                    currentScreen = AppScreen.HOME
-                },
-
-                onIncomingReturnClick = {
-                    incomingReturnAnalysisResult = null
-                    currentScreen = AppScreen.INCOMING_RETURN
-                },
-
-                onOutgoingReturnClick = {
-                    currentScreen = AppScreen.OUTGOING_RETURN
-                }
-            )
-        }
-
-        // =========================================================
-        // GELEN İADE
-        // =========================================================
-
-        AppScreen.INCOMING_RETURN -> {
-
-            val database =
-                DatabaseProvider.getDatabase(context)
-
-            IncomingReturnScreen(
-
-                database = database,
-
-                onBack = {
-                    currentScreen = AppScreen.RETURNS
-                }
-            )
-        }
-
-        // =========================================================
-        // GELEN İADE KAMERASI
-        // =========================================================
-
-        AppScreen.INCOMING_RETURN_CAMERA -> {
-
-            CameraScanScreen(
-
-                mode = CameraScanMode.INCOMING_RETURN,
-
-                onBack = {
-                    currentScreen = AppScreen.INCOMING_RETURN
-                },
-
-                onScanResult = { result ->
-
-                    incomingReturnAnalysisResult =
-                        IncomingReturnAnalysisResult(
-                            productCode = result.productCode,
-                            systemBarcode = result.systemBarcode,
-                            color = result.color,
-                            size = result.size,
-                            quantity = null,
-                            source = null,
-                            photoUri = null,
-                            confidence = 0f,
-                            rawText = result.rawText,
-                            isValid =
-                                !result.productCode.isNullOrBlank(),
-                            requiresManualReview = true
-                        )
-
-                    currentScreen =
-                        AppScreen.INCOMING_RETURN_REVIEW
-                }
-            )
-        }
-
-        // =========================================================
-        // GELEN İADE KONTROL
-        // =========================================================
-
-        AppScreen.INCOMING_RETURN_REVIEW -> {
-
-            val database =
-                DatabaseProvider.getDatabase(context)
-
-            val result =
-                incomingReturnAnalysisResult
-
-            if (result == null) {
-
-                IncomingReturnScreen(
-
-                    database = database,
-
-                    onBack = {
-                        currentScreen =
-                            AppScreen.INCOMING_RETURN
-                    }
-                )
-
-            } else {
-
-                IncomingReturnReviewScreen(
-
-                    database = database,
-
-                    result = result,
-
-                    onBack = {
-                        currentScreen =
-                            AppScreen.INCOMING_RETURN
+                HomeScreen(
+                    onProductsClick = {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.PRODUCTS
                     },
 
-                    onEdit = {
-                        // Düzenleme akışı review ekranında yönetiliyor.
+                    onAddProductClick = {
+                        quickActionVisible = false
+                        cameraResult = null
+                        currentScreen = AppScreen.ADD_PRODUCT
                     },
 
-                    onConfirmSuccess = {
+                    onReturnsClick = {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.RETURNS
+                    },
 
+                    onSettingsClick = {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.SETTINGS
+                    },
+
+                    onWarehouseClick = {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.WAREHOUSE
+                    },
+
+                    onIncomingReturnClick = {
+                        quickActionVisible = false
                         incomingReturnAnalysisResult = null
+                        currentScreen = AppScreen.INCOMING_RETURN
+                    },
 
-                        currentScreen =
-                            AppScreen.INCOMING_RETURN
+                    onOutgoingReturnClick = {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.OUTGOING_RETURN
                     }
                 )
             }
-        }
 
-        // =========================================================
-        // GİDEN İADE
-        // =========================================================
+            AppScreen.PRODUCTS -> {
 
-        AppScreen.OUTGOING_RETURN -> {
+                ProductsScreen(
+                    onBack = {
+                        currentScreen = AppScreen.HOME
+                    },
 
-            val database =
-                DatabaseProvider.getDatabase(context)
+                    onAddProduct = {
+                        cameraResult = null
+                        currentScreen = AppScreen.ADD_PRODUCT
+                    },
 
-            OutgoingReturnScreen(
+                    onReturnsClick = {
+                        currentScreen = AppScreen.RETURNS
+                    },
 
-                database = database,
+                    onSettingsClick = {
+                        currentScreen = AppScreen.SETTINGS
+                    }
+                )
+            }
 
-                onBack = {
-                    currentScreen = AppScreen.RETURNS
-                }
-            )
-        }
+            AppScreen.ADD_PRODUCT -> {
 
-        // =========================================================
-        // ANA DEPO
-        // =========================================================
-
-        AppScreen.WAREHOUSE -> {
-
-            WarehouseScreen(
-
-                onBack = {
-                    currentScreen = AppScreen.HOME
-                },
-
-                onListsClick = {
-                    currentScreen = AppScreen.LISTS
-                },
-
-                onProductsClick = {
-                    currentScreen = AppScreen.PRODUCTS
-                },
-
-                onLocationClick = {
-                },
-
-                onStockClick = {
-                },
-
-                onRowClick = { row ->
-
-                    selectedRow = row
-                    selectedRack = null
-                    selectedLocation = null
-
-                    currentScreen =
-                        AppScreen.WAREHOUSE_ROW
-                },
-
-                onAddRowClick = {
-                },
-
-                onSearchClick = {
-                }
-            )
-        }
-
-        // =========================================================
-        // DEPO SIRA
-        // =========================================================
-
-        AppScreen.WAREHOUSE_ROW -> {
-
-            WarehouseRowNavigation(
-
-                row = selectedRow
-                    ?: WarehouseRow(
-                        rowNumber = 1
-                    ),
-
-                onBack = {
-                    currentScreen =
-                        AppScreen.WAREHOUSE
-                },
-
-                onRackClick = { rack ->
-
-                    selectedRack = rack
-                    selectedLocation = null
-
-                    currentScreen =
-                        AppScreen.WAREHOUSE_RACK
-                },
-
-                onAddRackClick = {
-                }
-            )
-        }
-
-        // =========================================================
-        // DEPO RAF
-        // =========================================================
-
-        AppScreen.WAREHOUSE_RACK -> {
-
-            val rack = selectedRack
-
-            if (rack == null) {
-
-                currentScreen =
-                    AppScreen.WAREHOUSE_ROW
-
-            } else {
-
-                WarehouseRackNavigation(
-
-                    rack = rack,
+                AddProductScreen(
+                    onProductSaved = {
+                        cameraResult = null
+                        currentScreen = AppScreen.PRODUCTS
+                    },
 
                     onBack = {
+                        cameraResult = null
+                        currentScreen = AppScreen.PRODUCTS
+                    },
+
+                    onCameraClick = {
+                        cameraResult = null
+                        currentScreen = AppScreen.CAMERA
+                    },
+
+                    cameraResult = cameraResult
+                )
+            }
+
+            AppScreen.CAMERA -> {
+
+                CameraScanScreen(
+                    mode = CameraScanMode.PRODUCT,
+
+                    onBack = {
+                        currentScreen = AppScreen.ADD_PRODUCT
+                    },
+
+                    onScanResult = { result ->
+
+                        cameraResult = result
+                        currentScreen = AppScreen.ADD_PRODUCT
+                    }
+                )
+            }
+
+            AppScreen.RETURNS -> {
+
+                ReturnsScreen(
+                    onBack = {
+                        currentScreen = AppScreen.HOME
+                    },
+
+                    onIncomingReturnClick = {
+                        incomingReturnAnalysisResult = null
+                        currentScreen = AppScreen.INCOMING_RETURN
+                    },
+
+                    onOutgoingReturnClick = {
+                        currentScreen = AppScreen.OUTGOING_RETURN
+                    }
+                )
+            }
+
+            AppScreen.INCOMING_RETURN -> {
+
+                val database =
+                    DatabaseProvider.getDatabase(context)
+
+                IncomingReturnScreen(
+                    database = database,
+
+                    onBack = {
+                        currentScreen = AppScreen.RETURNS
+                    }
+                )
+            }
+
+            AppScreen.INCOMING_RETURN_CAMERA -> {
+
+                CameraScanScreen(
+                    mode = CameraScanMode.INCOMING_RETURN,
+
+                    onBack = {
+                        currentScreen = AppScreen.INCOMING_RETURN
+                    },
+
+                    onScanResult = { result ->
+
+                        incomingReturnAnalysisResult =
+                            IncomingReturnAnalysisResult(
+                                productCode =
+                                    result.productCode,
+
+                                systemBarcode =
+                                    result.systemBarcode,
+
+                                color =
+                                    result.color,
+
+                                size =
+                                    result.size,
+
+                                quantity = null,
+
+                                source = null,
+
+                                photoUri = null,
+
+                                confidence = 0f,
+
+                                rawText =
+                                    result.rawText,
+
+                                isValid =
+                                    !result.productCode
+                                        .isNullOrBlank(),
+
+                                requiresManualReview = true
+                            )
+
+                        currentScreen =
+                            AppScreen.INCOMING_RETURN_REVIEW
+                    }
+                )
+            }
+
+            AppScreen.INCOMING_RETURN_REVIEW -> {
+
+                val database =
+                    DatabaseProvider.getDatabase(context)
+
+                val result =
+                    incomingReturnAnalysisResult
+
+                if (result == null) {
+
+                    IncomingReturnScreen(
+                        database = database,
+
+                        onBack = {
+                            currentScreen =
+                                AppScreen.INCOMING_RETURN
+                        }
+                    )
+
+                } else {
+
+                    IncomingReturnReviewScreen(
+                        database = database,
+
+                        result = result,
+
+                        onBack = {
+                            currentScreen =
+                                AppScreen.INCOMING_RETURN
+                        },
+
+                        onEdit = {
+                            // Mevcut düzenleme akışı korunuyor.
+                        },
+
+                        onConfirmSuccess = {
+
+                            incomingReturnAnalysisResult =
+                                null
+
+                            currentScreen =
+                                AppScreen.INCOMING_RETURN
+                        }
+                    )
+                }
+            }
+
+            AppScreen.OUTGOING_RETURN -> {
+
+                val database =
+                    DatabaseProvider.getDatabase(context)
+
+                OutgoingReturnScreen(
+                    database = database,
+
+                    onBack = {
+                        currentScreen = AppScreen.RETURNS
+                    }
+                )
+            }
+
+            AppScreen.WAREHOUSE -> {
+
+                WarehouseScreen(
+                    onBack = {
+                        currentScreen = AppScreen.HOME
+                    },
+
+                    onListsClick = {
+                        currentScreen = AppScreen.LISTS
+                    },
+
+                    onProductsClick = {
+                        currentScreen = AppScreen.PRODUCTS
+                    },
+
+                    onLocationClick = {
+                    },
+
+                    onStockClick = {
+                    },
+
+                    onRowClick = { row ->
+
+                        selectedRow = row
+                        selectedRack = null
+                        selectedLocation = null
+
                         currentScreen =
                             AppScreen.WAREHOUSE_ROW
                     },
 
-                    onLocationClick = { location ->
-
-                        selectedLocation = location
-
-                        currentScreen =
-                            AppScreen.WAREHOUSE_LOCATION
+                    onAddRowClick = {
                     },
 
-                    onAddLocationClick = {
+                    onSearchClick = {
                     }
                 )
             }
-        }
 
-        // =========================================================
-        // DEPO KONUM
-        // =========================================================
+            AppScreen.WAREHOUSE_ROW -> {
 
-        AppScreen.WAREHOUSE_LOCATION -> {
-
-            val location = selectedLocation
-
-            if (location == null) {
-
-                currentScreen =
-                    AppScreen.WAREHOUSE_RACK
-
-            } else {
-
-                WarehouseLocationNavigation(
-
-                    location = location,
+                WarehouseRowNavigation(
+                    row = selectedRow
+                        ?: WarehouseRow(
+                            rowNumber = 1
+                        ),
 
                     onBack = {
+                        currentScreen =
+                            AppScreen.WAREHOUSE
+                    },
+
+                    onRackClick = { rack ->
+
+                        selectedRack = rack
+                        selectedLocation = null
+
                         currentScreen =
                             AppScreen.WAREHOUSE_RACK
                     },
 
-                    onProductClick = {
+                    onAddRackClick = {
+                    }
+                )
+            }
+
+            AppScreen.WAREHOUSE_RACK -> {
+
+                val rack = selectedRack
+
+                if (rack == null) {
+
+                    currentScreen =
+                        AppScreen.WAREHOUSE_ROW
+
+                } else {
+
+                    WarehouseRackNavigation(
+                        rack = rack,
+
+                        onBack = {
+                            currentScreen =
+                                AppScreen.WAREHOUSE_ROW
+                        },
+
+                        onLocationClick = { location ->
+
+                            selectedLocation = location
+
+                            currentScreen =
+                                AppScreen.WAREHOUSE_LOCATION
+                        },
+
+                        onAddLocationClick = {
+                        }
+                    )
+                }
+            }
+
+            AppScreen.WAREHOUSE_LOCATION -> {
+
+                val location = selectedLocation
+
+                if (location == null) {
+
+                    currentScreen =
+                        AppScreen.WAREHOUSE_RACK
+
+                } else {
+
+                    WarehouseLocationNavigation(
+                        location = location,
+
+                        onBack = {
+                            currentScreen =
+                                AppScreen.WAREHOUSE_RACK
+                        },
+
+                        onProductClick = {
+                        },
+
+                        onEditClick = {
+                        }
+                    )
+                }
+            }
+
+            AppScreen.LISTS -> {
+
+                ListsScreen(
+                    onBack = {
+                        currentScreen =
+                            AppScreen.WAREHOUSE
                     },
 
-                    onEditClick = {
+                    onCategoryClick = { category ->
+
+                        when (category) {
+
+                            ListCategory.ANA_LISTE -> {
+                            }
+
+                            ListCategory.YENI_GELEN -> {
+                            }
+
+                            ListCategory.GIDEN -> {
+                            }
+
+                            ListCategory.GIDEN_IADE -> {
+                            }
+
+                            ListCategory.GELEN_IADE -> {
+                            }
+                        }
+                    }
+                )
+            }
+
+            AppScreen.SETTINGS -> {
+
+                HomeScreen(
+                    onProductsClick = {
+                        currentScreen =
+                            AppScreen.PRODUCTS
+                    },
+
+                    onAddProductClick = {
+                        cameraResult = null
+                        currentScreen =
+                            AppScreen.ADD_PRODUCT
+                    },
+
+                    onReturnsClick = {
+                        currentScreen =
+                            AppScreen.RETURNS
+                    },
+
+                    onSettingsClick = {
+                        currentScreen =
+                            AppScreen.SETTINGS
+                    },
+
+                    onWarehouseClick = {
+                        currentScreen =
+                            AppScreen.WAREHOUSE
                     }
                 )
             }
         }
 
         // =========================================================
-        // LİSTELER
+        // HIZLI İŞLEMLER
+        // ALT MENÜNÜN ÜZERİNDE, ALT MERKEZDE
         // =========================================================
 
-        AppScreen.LISTS -> {
+        QuickActionMenu(
+            modifier = Modifier.align(Alignment.BottomCenter),
 
-            ListsScreen(
+            visible = quickActionVisible,
 
-                onBack = {
-                    currentScreen =
-                        AppScreen.WAREHOUSE
-                },
+            onNewProductClick = {
+                quickActionVisible = false
+                cameraResult = null
+                currentScreen = AppScreen.ADD_PRODUCT
+            },
 
-                onCategoryClick = { category ->
+            onIncomingReturnClick = {
+                quickActionVisible = false
+                incomingReturnAnalysisResult = null
+                currentScreen = AppScreen.INCOMING_RETURN
+            },
 
-                    when (category) {
-
-                        ListCategory.ANA_LISTE -> {
-                        }
-
-                        ListCategory.YENI_GELEN -> {
-                        }
-
-                        ListCategory.GIDEN -> {
-                        }
-
-                        ListCategory.GIDEN_IADE -> {
-                        }
-
-                        ListCategory.GELEN_IADE -> {
-                        }
-                    }
-                }
-            )
-        }
+            onOutgoingReturnClick = {
+                quickActionVisible = false
+                currentScreen = AppScreen.OUTGOING_RETURN
+            }
+        )
 
         // =========================================================
-        // AYARLAR
+        // GLOBAL ALT MENÜ
+        // HER SAYFADA SABİT
         // =========================================================
-        //
-        // Gerçek SettingsScreen ayrı dosyada oluşturulacak.
-        // Şimdilik mevcut akış korunuyor.
-        //
 
-        AppScreen.SETTINGS -> {
+        BottomNavigationBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
 
-            HomeScreen(
+            selectedItem = when (currentScreen) {
 
-                onProductsClick = {
-                    currentScreen =
-                        AppScreen.PRODUCTS
-                },
+                AppScreen.HOME ->
+                    BottomNavigationItemType.HOME
 
-                onAddProductClick = {
-                    cameraResult = null
-                    currentScreen =
-                        AppScreen.ADD_PRODUCT
-                },
+                AppScreen.PRODUCTS,
+                AppScreen.ADD_PRODUCT,
+                AppScreen.CAMERA ->
+                    BottomNavigationItemType.PRODUCTS
 
-                onReturnsClick = {
-                    currentScreen =
-                        AppScreen.RETURNS
-                },
+                AppScreen.RETURNS,
+                AppScreen.INCOMING_RETURN,
+                AppScreen.INCOMING_RETURN_CAMERA,
+                AppScreen.INCOMING_RETURN_REVIEW,
+                AppScreen.OUTGOING_RETURN ->
+                    BottomNavigationItemType.RETURNS
 
-                onSettingsClick = {
-                    currentScreen =
-                        AppScreen.SETTINGS
-                },
+                AppScreen.SETTINGS ->
+                    BottomNavigationItemType.SETTINGS
 
-                onWarehouseClick = {
-                    currentScreen =
-                        AppScreen.WAREHOUSE
-                },
+                AppScreen.WAREHOUSE,
+                AppScreen.WAREHOUSE_ROW,
+                AppScreen.WAREHOUSE_RACK,
+                AppScreen.WAREHOUSE_LOCATION,
+                AppScreen.LISTS ->
+                    BottomNavigationItemType.HOME
+            },
 
-                onIncomingReturnClick = {
-                    incomingReturnAnalysisResult = null
-                    currentScreen =
-                        AppScreen.INCOMING_RETURN
-                },
+            onHomeClick = {
+                quickActionVisible = false
+                currentScreen = AppScreen.HOME
+            },
 
-                onOutgoingReturnClick = {
-                    currentScreen =
-                        AppScreen.OUTGOING_RETURN
-                }
-            )
-        }
+            onProductsClick = {
+                quickActionVisible = false
+                currentScreen = AppScreen.PRODUCTS
+            },
+
+            onQuickActionClick = {
+                quickActionVisible =
+                    !quickActionVisible
+            },
+
+            onReturnsClick = {
+                quickActionVisible = false
+                currentScreen = AppScreen.RETURNS
+            },
+
+            onSettingsClick = {
+                quickActionVisible = false
+                currentScreen = AppScreen.SETTINGS
+            }
+        )
     }
 }

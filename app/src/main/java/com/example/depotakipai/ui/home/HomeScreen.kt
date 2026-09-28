@@ -10,27 +10,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.depotakipai.ui.components.BottomNavigationBar
-import com.example.depotakipai.ui.components.BottomNavigationItemType
-import com.example.depotakipai.ui.components.QuickActionMenu
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,9 +41,6 @@ fun HomeScreen(
     onIncomingReturnClick: () -> Unit = {},
     onOutgoingReturnClick: () -> Unit = {}
 ) {
-    var quickActionVisible by remember {
-        mutableStateOf(false)
-    }
 
     Box(
         modifier = Modifier
@@ -64,25 +51,24 @@ fun HomeScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .padding(
                     start = 16.dp,
-                    end = 16.dp
-                )
-                .padding(bottom = 110.dp),
+                    end = 16.dp,
+                    bottom = 24.dp
+                ),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
 
             item {
 
                 Spacer(
-                    modifier = Modifier.height(18.dp)
+                    modifier = Modifier.height(24.dp)
                 )
 
                 HomeHeader()
 
                 Spacer(
-                    modifier = Modifier.height(24.dp)
+                    modifier = Modifier.height(28.dp)
                 )
             }
 
@@ -95,7 +81,7 @@ fun HomeScreen(
                 )
 
                 Spacer(
-                    modifier = Modifier.height(28.dp)
+                    modifier = Modifier.height(30.dp)
                 )
             }
 
@@ -115,58 +101,16 @@ fun HomeScreen(
                 EmptyOperationsCard()
 
                 Spacer(
-                    modifier = Modifier.height(20.dp)
+                    modifier = Modifier.height(30.dp)
                 )
             }
         }
-
-        if (quickActionVisible) {
-            QuickActionMenu(
-                visible = true,
-                onNewProductClick = {
-                    quickActionVisible = false
-                    onAddProductClick()
-                },
-                onIncomingReturnClick = {
-                    quickActionVisible = false
-                    onIncomingReturnClick()
-                },
-                onOutgoingReturnClick = {
-                    quickActionVisible = false
-                    onOutgoingReturnClick()
-                }
-            )
-        }
-
-        BottomNavigationBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter),
-            selectedItem = BottomNavigationItemType.HOME,
-            onHomeClick = {
-                quickActionVisible = false
-            },
-            onProductsClick = {
-                quickActionVisible = false
-                onProductsClick()
-            },
-            onQuickActionClick = {
-                quickActionVisible = !quickActionVisible
-            },
-            onReturnsClick = {
-                quickActionVisible = false
-                onReturnsClick()
-            },
-            onSettingsClick = {
-                quickActionVisible = false
-                onSettingsClick()
-            }
-        )
     }
 }
 
-// =================================================================
-// ANA SAYFA ÜST BAŞLIK
-// =================================================================
+// ================================================================
+// BAŞLIK
+// ================================================================
 
 @Composable
 private fun HomeHeader() {
@@ -210,9 +154,9 @@ private fun HomeHeader() {
     }
 }
 
-// =================================================================
+// ================================================================
 // DASHBOARD
-// =================================================================
+// ================================================================
 
 @Composable
 private fun DashboardGrid(
@@ -279,9 +223,9 @@ private fun DashboardGrid(
     }
 }
 
-// =================================================================
+// ================================================================
 // DASHBOARD KARTI
-// =================================================================
+// ================================================================
 
 @Composable
 private fun DashboardCard(
@@ -308,11 +252,11 @@ private fun DashboardCard(
 
             Box(
                 modifier = Modifier
-                    .size(44.dp)
                     .background(
                         color = color.copy(alpha = 0.10f),
                         shape = RoundedCornerShape(12.dp)
-                    ),
+                    )
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
 
@@ -334,9 +278,9 @@ private fun DashboardCard(
     }
 }
 
-// =================================================================
+// ================================================================
 // SON İŞLEMLER
-// =================================================================
+// ================================================================
 
 @Composable
 private fun EmptyOperationsCard() {
