@@ -1,31 +1,34 @@
 package com.example.depotakipai.ui.camera
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.Environment
-import android.provider.MediaStore
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -35,47 +38,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.delay
 
 private val DarkRed = Color(0xFF8B0000)
+private val SteelBlue = Color(0xFF4682B4)
 private val Gray = Color(0xFF808080)
+private val SuccessGreen = Color(0xFF1B8F3A)
 
 @Composable
 fun CameraScanScreen(
     onBack: () -> Unit = {},
-    onScanResult: (CameraScanResult) -> Unit = {},
+    onScanConfirmed: (List<CameraScanResult>) -> Unit = {},
     mode: CameraScanMode = CameraScanMode.PRODUCT
 ) {
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // =========================================================
-    // KAMERA İZNİ
-    // =========================================================
+    /*
+     * =========================================================
+     * KAMERA İZNİ
+     * =========================================================
+     */
 
     var hasCameraPermission by remember {
-
         mutableStateOf(
             ContextCompat.checkSelfPermission(
                 context,
@@ -88,89 +93,122 @@ fun CameraScanScreen(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
         ) { granted ->
-
             hasCameraPermission = granted
         }
 
     LaunchedEffect(Unit) {
-
         if (!hasCameraPermission) {
-
-            permissionLauncher.launch(
-                Manifest.permission.CAMERA
-            )
+            permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    // =========================================================
-    // ÇEKİLEN FOTOĞRAF
-    // =========================================================
+    /*
+     * =========================================================
+     * OKUNAN ÜRÜNLER
+     * =========================================================
+     */
 
-    var capturedBitmap by remember {
-        mutableStateOf<Bitmap?>(null)
+    val scannedResults =
+        remember {
+            mutableStateListOf<CameraScanResult>()
+        }
+
+    var lastScannedCode by remember {
+        mutableStateOf("")
     }
 
-    // =========================================================
-    // ANALİZ DURUMU
-    // =========================================================
+    val lastScanTime =
+        remember {
+            AtomicLong(0L)
+        }
 
-    var isAnalyzing by remember {
+    /*
+     * Barkod okundu görsel durumu
+     */
+
+    var barcodeReadSuccess by remember {
         mutableStateOf(false)
     }
 
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
+    /*
+     * Son okunan ürün
+     */
+
+    var lastReadText by remember {
+        mutableStateOf("")
     }
 
-    // =========================================================
-    // CAMERA PROVIDER
-    // =========================================================
+    /*
+     * Kamera analiz thread'i
+     */
 
-    var cameraProvider by remember {
-        mutableStateOf<ProcessCameraProvider?>(null)
-    }
+    val cameraExecutor =
+        remember {
+            Executors.newSingleThreadExecutor()
+        }
 
-    // =========================================================
-    // IMAGE CAPTURE
-    // =========================================================
+    /*
+     * UI thread
+     */
 
-    var imageCapture by remember {
-        mutableStateOf<ImageCapture?>(null)
-    }
+    val mainHandler =
+        remember {
+            Handler(Looper.getMainLooper())
+        }
 
-    // =========================================================
-    // FOTOĞRAF ALINDI MI?
-    // =========================================================
-
-    val photoTaken = remember {
-        AtomicBoolean(false)
-    }
-
-    // =========================================================
-    // CAMERA EXECUTOR
-    // =========================================================
-
-    val cameraExecutor = remember {
-        Executors.newSingleThreadExecutor()
-    }
-
-    // =========================================================
-    // TEMİZLE
-    // =========================================================
+    /*
+     * =========================================================
+     * TEMİZLEME
+     * =========================================================
+     */
 
     DisposableEffect(Unit) {
-
         onDispose {
-
-            cameraProvider?.unbindAll()
-
             cameraExecutor.shutdown()
+            mainHandler.removeCallbacksAndMessages(null)
         }
     }
 
-    // =========================================================
-    // ANA EKRAN
-    // =========================================================
+    /*
+     * =========================================================
+     * SAYILAR
+     * =========================================================
+     */
+
+    val totalScanned = scannedResults.size
+
+    val differentProducts =
+        scannedResults
+            .mapNotNull { item ->
+                item.systemBarcode
+                    ?.takeIf { it.isNotBlank() }
+                    ?: item.productCode
+                        ?.takeIf { it.isNotBlank() }
+            }
+            .distinct()
+            .size
+
+    /*
+     * =========================================================
+     * OKUNDU DURUMUNU KISA SÜRE GÖSTER
+     * =========================================================
+     */
+
+    LaunchedEffect(barcodeReadSuccess) {
+
+        if (barcodeReadSuccess) {
+
+            delay(900)
+
+            barcodeReadSuccess = false
+        }
+    }
+
+    /*
+     * =========================================================
+     * ANA EKRAN
+     * =========================================================
+     */
 
     Box(
         modifier = Modifier
@@ -178,777 +216,805 @@ fun CameraScanScreen(
             .background(Color.Black)
     ) {
 
-        // =====================================================
-        // CANLI KAMERA
-        // =====================================================
+        /*
+         * =====================================================
+         * CANLI KAMERA
+         * =====================================================
+         */
 
-        if (
-            hasCameraPermission &&
-            capturedBitmap == null
-        ) {
+        if (hasCameraPermission) {
 
-            /*
-             * capturedBitmap değiştiğinde AndroidView'ın
-             * yeniden oluşturulmasını sağlıyoruz.
-             *
-             * Böylece X ile fotoğraf iptal edildiğinde
-             * kamera gerçekten yeniden başlar.
-             */
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
 
-            key(capturedBitmap == null) {
+                factory = { viewContext ->
 
-                AndroidView(
+                    val previewView =
+                        PreviewView(viewContext)
 
-                    modifier = Modifier.fillMaxSize(),
+                    val cameraProviderFuture =
+                        ProcessCameraProvider.getInstance(
+                            viewContext
+                        )
 
-                    factory = { viewContext ->
+                    cameraProviderFuture.addListener({
 
-                        val previewView =
-                            PreviewView(viewContext)
+                        try {
 
-                        val cameraProviderFuture =
-                            ProcessCameraProvider.getInstance(
-                                viewContext
-                            )
+                            val provider =
+                                cameraProviderFuture.get()
 
-                        cameraProviderFuture.addListener({
+                            /*
+                             * PREVIEW
+                             */
 
-                            try {
+                            val preview =
+                                Preview.Builder()
+                                    .build()
+                                    .also { previewUseCase ->
 
-                                val provider =
-                                    cameraProviderFuture.get()
-
-                                cameraProvider =
-                                    provider
-
-                                // =================================
-                                // PREVIEW
-                                // =================================
-
-                                val preview =
-                                    Preview.Builder()
-                                        .build()
-                                        .also {
-
-                                            it.surfaceProvider =
-                                                previewView
-                                                    .surfaceProvider
-                                        }
-
-                                // =================================
-                                // FOTOĞRAF ÇEKME
-                                // =================================
-
-                                val capture =
-                                    ImageCapture.Builder()
-                                        .setCaptureMode(
-                                            ImageCapture
-                                                .CAPTURE_MODE_MINIMIZE_LATENCY
-                                        )
-                                        .build()
-
-                                imageCapture =
-                                    capture
-
-                                // =================================
-                                // BARKOD ANALİZİ
-                                // =================================
-
-                                val imageAnalysis =
-                                    ImageAnalysis.Builder()
-                                        .setBackpressureStrategy(
-                                            ImageAnalysis
-                                                .STRATEGY_KEEP_ONLY_LATEST
-                                        )
-                                        .build()
-
-                                val barcodeAnalyzer =
-                                    BarcodeCaptureAnalyzer {
-
-                                        /*
-                                         * Barkod ilk kez
-                                         * görüldüğünde fotoğraf çek.
-                                         */
-
-                                        if (
-                                            photoTaken
-                                                .compareAndSet(
-                                                    false,
-                                                    true
-                                                )
-                                        ) {
-
-                                            capturePhoto(
-
-                                                imageCapture =
-                                                    capture,
-
-                                                context =
-                                                    viewContext,
-
-                                                mode =
-                                                    mode,
-
-                                                onBitmapReady = { bitmap ->
-
-                                                    capturedBitmap =
-                                                        bitmap
-
-                                                    /*
-                                                     * Canlı kamerayı durdur.
-                                                     */
-
-                                                    provider
-                                                        .unbindAll()
-                                                },
-
-                                                onError = {
-
-                                                    photoTaken
-                                                        .set(false)
-
-                                                    errorMessage =
-                                                        "Fotoğraf alınamadı."
-                                                }
-                                            )
-                                        }
+                                        previewUseCase.surfaceProvider =
+                                            previewView.surfaceProvider
                                     }
 
-                                imageAnalysis.setAnalyzer(
-                                    cameraExecutor,
-                                    barcodeAnalyzer
-                                )
+                            /*
+                             * ANALİZ
+                             */
 
-                                // =================================
-                                // ARKA KAMERA
-                                // =================================
+                            val imageAnalysis =
+                                ImageAnalysis.Builder()
+                                    .setBackpressureStrategy(
+                                        ImageAnalysis
+                                            .STRATEGY_KEEP_ONLY_LATEST
+                                    )
+                                    .build()
 
-                                val cameraSelector =
-                                    CameraSelector
-                                        .DEFAULT_BACK_CAMERA
+                            /*
+                             * MEVCUT CAMERA ANALYZER
+                             */
 
-                                provider.unbindAll()
+                            val analyzer =
+                                CameraAnalyzer { result ->
 
-                                provider.bindToLifecycle(
+                                    val now =
+                                        System.currentTimeMillis()
 
-                                    lifecycleOwner,
+                                    val currentCode =
+                                        result.systemBarcode
+                                            ?.takeIf {
+                                                it.isNotBlank()
+                                            }
+                                            ?: result.productCode
+                                                ?.takeIf {
+                                                    it.isNotBlank()
+                                                }
+                                            ?: ""
 
-                                    cameraSelector,
+                                    /*
+                                     * Geçersiz sonuç
+                                     */
 
-                                    preview,
+                                    if (currentCode.isBlank()) {
+                                        return@CameraAnalyzer
+                                    }
 
-                                    capture,
+                                    /*
+                                     * Aynı barkodun aynı anda
+                                     * tekrar tekrar okunmasını engelle.
+                                     */
 
-                                    imageAnalysis
-                                )
+                                    if (
+                                        currentCode ==
+                                        lastScannedCode &&
+                                        now -
+                                        lastScanTime.get() <
+                                        1200L
+                                    ) {
+                                        return@CameraAnalyzer
+                                    }
 
-                            } catch (exception: Exception) {
+                                    lastScannedCode =
+                                        currentCode
 
-                                errorMessage =
-                                    exception.message
-                                        ?: "Kamera başlatılamadı."
-                            }
+                                    lastScanTime.set(now)
 
-                        }, ContextCompat.getMainExecutor(viewContext))
+                                    /*
+                                     * OKUMA SESİ
+                                     */
 
-                        previewView
-                    }
-                )
-            }
-        }
+                                    playBarcodeSound(context)
 
-        // =====================================================
-        // ÇEKİLEN FOTOĞRAF
-        // =====================================================
+                                    /*
+                                     * TİTREŞİM
+                                     */
 
-        capturedBitmap?.let { bitmap ->
+                                    vibrateOnScan(context)
 
-            Image(
+                                    /*
+                                     * UI THREAD'E GEÇ
+                                     */
 
-                bitmap =
-                    bitmap.asImageBitmap(),
+                                    mainHandler.post {
 
-                contentDescription =
-                    "Çekilen etiket fotoğrafı",
+                                        scannedResults.add(result)
 
-                modifier =
-                    Modifier.fillMaxSize()
+                                        lastReadText =
+                                            currentCode
+
+                                        barcodeReadSuccess = true
+                                    }
+                                }
+
+                            imageAnalysis.setAnalyzer(
+                                cameraExecutor,
+                                analyzer
+                            )
+
+                            /*
+                             * ARKA KAMERA
+                             */
+
+                            val cameraSelector =
+                                CameraSelector.DEFAULT_BACK_CAMERA
+
+                            provider.unbindAll()
+
+                            provider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalysis
+                            )
+
+                        } catch (_: Exception) {
+                            // Kamera başlatma hatası
+                        }
+
+                    }, ContextCompat.getMainExecutor(viewContext))
+
+                    previewView
+                }
             )
         }
 
-        // =====================================================
-        // ÜST BAŞLIK
-        // =====================================================
+        /*
+         * =====================================================
+         * TRENDYOL TARZI KAMERA OVERLAY
+         * =====================================================
+         */
+
+        if (hasCameraPermission) {
+
+            BarcodeScannerOverlay(
+                success = barcodeReadSuccess
+            )
+        }
+
+        /*
+         * =====================================================
+         * ÜST BİLGİLER
+         * =====================================================
+         */
 
         Row(
-
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .padding(
-                    horizontal = 16.dp,
-                    vertical = 12.dp
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 12.dp
                 ),
-
-            verticalAlignment =
-                Alignment.CenterVertically,
-
             horizontalArrangement =
-                Arrangement.SpaceBetween
+                Arrangement.spacedBy(10.dp)
         ) {
 
-            Text(
-
-                text =
-                    when {
-
-                        capturedBitmap != null ->
-                            "FOTOĞRAF"
-
-                        mode == CameraScanMode.INCOMING_RETURN ->
-                            "GELEN İADE"
-
-                        else ->
-                            "ETİKET OKU"
-                    },
-
-                color =
-                    Color.White,
-
-                fontSize =
-                    24.sp,
-
-                fontWeight =
-                    FontWeight.Medium
+            ScanInfoButton(
+                modifier = Modifier.weight(1f),
+                title = "OKUNAN",
+                value = "$totalScanned",
+                color = DarkRed
             )
 
-            if (capturedBitmap == null) {
-
-                Button(
-
-                    onClick = onBack,
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                DarkRed
-                        ),
-
-                    shape =
-                        RoundedCornerShape(12.dp)
-                ) {
-
-                    Text(
-                        text = "Geri"
-                    )
-                }
-            }
-        }
-
-        // =====================================================
-        // FOTOĞRAF ÇEKİLMEDEN ÖNCE
-        // =====================================================
-
-        if (
-            capturedBitmap == null &&
-            hasCameraPermission
-        ) {
-
-            Text(
-
-                text =
-                    if (
-                        mode == CameraScanMode.INCOMING_RETURN
-                    ) {
-                        "İade etiketini kameraya gösterin"
-                    } else {
-                        "Etiketi kameraya gösterin"
-                    },
-
-                modifier =
-                    Modifier
-                        .align(Alignment.Center)
-                        .padding(top = 250.dp),
-
-                color =
-                    Color.White,
-
-                fontSize =
-                    15.sp
+            ScanInfoButton(
+                modifier = Modifier.weight(1f),
+                title = "FARKLI ÜRÜN",
+                value = "$differentProducts",
+                color = SteelBlue
             )
         }
 
-        // =====================================================
-        // ANALİZ EDİLİYOR
-        // =====================================================
+        /*
+         * =====================================================
+         * SON OKUNAN BİLGİSİ
+         * =====================================================
+         *
+         * Sürekli yazı yok.
+         * Sadece gerçekten barkod okunduğunda kısa süre görünür.
+         */
 
-        if (isAnalyzing) {
+        if (barcodeReadSuccess) {
 
             Box(
-
-                modifier =
-                    Modifier.fillMaxSize(),
-
-                contentAlignment =
-                    Alignment.Center
-            ) {
-
-                androidx.compose.material3.Card(
-
-                    shape =
-                        RoundedCornerShape(18.dp),
-
-                    colors =
-                        androidx.compose.material3
-                            .CardDefaults
-                            .cardColors(
-                                containerColor =
-                                    Color.Black.copy(
-                                        alpha = 0.80f
-                                    )
-                            )
-                ) {
-
-                    Text(
-
-                        text =
-                            "Etiket analiz ediliyor...",
-
-                        modifier =
-                            Modifier.padding(
-                                horizontal = 28.dp,
-                                vertical = 20.dp
-                            ),
-
-                        color =
-                            Color.White,
-
-                        fontSize =
-                            17.sp,
-
-                        fontWeight =
-                            FontWeight.SemiBold
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(top = 340.dp)
+                    .background(
+                        color = SuccessGreen,
+                        shape = RoundedCornerShape(20.dp)
                     )
-                }
-            }
-        }
-
-        // =====================================================
-        // ALT X / ✓
-        // =====================================================
-
-        if (
-            capturedBitmap != null &&
-            !isAnalyzing
-        ) {
-
-            Row(
-
-                modifier =
-                    Modifier
-                        .align(
-                            Alignment.BottomCenter
-                        )
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(20.dp),
-
-                horizontalArrangement =
-                    Arrangement.spacedBy(24.dp),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                // =============================================
-                // X — İPTAL
-                // =============================================
-
-                Button(
-
-                    onClick = {
-
-                        /*
-                         * Geçici bitmap bellekte tutuluyor.
-                         * Kamera yeniden başlatılıyor.
-                         */
-
-                        capturedBitmap =
-                            null
-
-                        isAnalyzing =
-                            false
-
-                        errorMessage =
-                            null
-
-                        imageCapture =
-                            null
-
-                        cameraProvider =
-                            null
-
-                        photoTaken.set(false)
-                    },
-
-                    modifier =
-                        Modifier.weight(1f),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                Gray
-                        ),
-
-                    shape =
-                        RoundedCornerShape(18.dp)
-                ) {
-
-                    Text(
-
-                        text = "✕",
-
-                        fontSize = 30.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-
-                // =============================================
-                // ✓ — SEÇ
-                // =============================================
-
-                Button(
-
-                    onClick = {
-
-                        val bitmap =
-                            capturedBitmap
-
-                        if (bitmap == null) {
-
-                            return@Button
-                        }
-
-                        /*
-                         * Kullanıcı fotoğrafı seçti.
-                         *
-                         * Şimdi gerçek analiz başlıyor.
-                         */
-
-                        isAnalyzing =
-                            true
-
-                        errorMessage =
-                            null
-
-                        val analyzer =
-                            CapturedLabelAnalyzer()
-
-                        analyzer.analyze(
-
-                            bitmap = bitmap,
-
-                            onResult = { result ->
-
-                                /*
-                                 * Analiz tamamlandı.
-                                 *
-                                 * Sonuç artık AppNavigation'a
-                                 * gönderilebilir.
-                                 */
-
-                                isAnalyzing =
-                                    false
-
-                                onScanResult(
-                                    result
-                                )
-                            },
-
-                            onError = { message ->
-
-                                isAnalyzing =
-                                    false
-
-                                errorMessage =
-                                    message
-                            }
-                        )
-                    },
-
-                    modifier =
-                        Modifier.weight(1f),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                DarkRed
-                        ),
-
-                    shape =
-                        RoundedCornerShape(18.dp)
-                ) {
-
-                    Text(
-
-                        text = "✓",
-
-                        fontSize = 30.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        // =====================================================
-        // HATA MESAJI
-        // =====================================================
-
-        errorMessage?.let { message ->
-
-            androidx.compose.material3.Card(
-
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(
-                            start = 20.dp,
-                            end = 20.dp,
-                            bottom = 105.dp
-                        ),
-
-                shape =
-                    RoundedCornerShape(12.dp),
-
-                colors =
-                    androidx.compose.material3
-                        .CardDefaults
-                        .cardColors(
-                            containerColor =
-                                DarkRed
-                        )
+                    .padding(
+                        horizontal = 20.dp,
+                        vertical = 10.dp
+                    ),
+                contentAlignment = Alignment.Center
             ) {
 
                 Text(
+                    text = "✓ OKUNDU",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
-                    text = message,
+        /*
+         * =====================================================
+         * GERİ
+         * =====================================================
+         */
 
-                    modifier =
-                        Modifier.padding(
-                            horizontal = 18.dp,
-                            vertical = 12.dp
-                        ),
+        Button(
+            onClick = onBack,
 
-                    color =
-                        Color.White,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(
+                    end = 16.dp,
+                    top = 72.dp
+                ),
 
-                    fontSize =
-                        14.sp
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        Color.Black.copy(alpha = 0.55f)
+                ),
+
+            shape =
+                RoundedCornerShape(12.dp)
+        ) {
+
+            Text(
+                text = "Geri",
+                color = Color.White
+            )
+        }
+
+        /*
+         * =====================================================
+         * ALT ONAY / RED BUTONLARI
+         * =====================================================
+         *
+         * Global alt menünün üzerine binmemesi için
+         * yukarı taşındı.
+         */
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(
+                    start = 18.dp,
+                    end = 18.dp,
+                    bottom = 108.dp
+                ),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(12.dp),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            /*
+             * REDDET
+             */
+
+            Button(
+                onClick = {
+
+                    scannedResults.clear()
+
+                    lastScannedCode = ""
+
+                    lastScanTime.set(0L)
+
+                    barcodeReadSuccess = false
+
+                    lastReadText = ""
+                },
+
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = Gray
+                    ),
+
+                shape =
+                    RoundedCornerShape(14.dp)
+            ) {
+
+                Text(
+                    text = "✕  REDDET",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            /*
+             * ONAYLA
+             */
+
+            Button(
+                onClick = {
+
+                    if (scannedResults.isNotEmpty()) {
+
+                        onScanConfirmed(
+                            scannedResults.toList()
+                        )
+                    }
+                },
+
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = DarkRed
+                    ),
+
+                shape =
+                    RoundedCornerShape(14.dp)
+            ) {
+
+                Text(
+                    text = "✓  ONAYLA",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
 }
 
-// =============================================================
-// FOTOĞRAF ÇEKME
-// =============================================================
 
-private fun capturePhoto(
-    imageCapture: ImageCapture,
-    context: Context,
-    mode: CameraScanMode,
-    onBitmapReady: (Bitmap) -> Unit,
-    onError: () -> Unit
+/*
+ * =============================================================
+ * OKUNAN / FARKLI ÜRÜN BUTONU
+ * =============================================================
+ */
+
+@Composable
+private fun ScanInfoButton(
+    modifier: Modifier,
+    title: String,
+    value: String,
+    color: Color
 ) {
 
-    /*
-     * GELEN İADE MODU
-     *
-     * Fotoğraf MediaStore'a kaydedilmez.
-     *
-     * Bunun yerine uygulamanın geçici cache klasörüne
-     * alınır, bitmap olarak okunur ve hemen silinir.
-     */
+    Box(
+        modifier = modifier
+            .height(62.dp)
+            .background(
+                color = Color.Black.copy(alpha = 0.55f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { },
 
-    if (mode == CameraScanMode.INCOMING_RETURN) {
+        contentAlignment = Alignment.Center
+    ) {
 
-        val temporaryFile =
-            File(
-                context.cacheDir,
-                "incoming_return_scan.jpg"
+        Row(
+            horizontalArrangement =
+                Arrangement.Center,
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
             )
 
-        val outputOptions =
-            ImageCapture.OutputFileOptions
-                .Builder(
-                    temporaryFile
+            Spacer(
+                modifier = Modifier.size(7.dp)
+            )
+
+            Text(
+                text = value,
+                color = color,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+
+/*
+ * =============================================================
+ * TRENDYOL TARZI BARKOD OKUMA ALANI
+ * =============================================================
+ */
+
+@Composable
+private fun BarcodeScannerOverlay(
+    success: Boolean
+) {
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        /*
+         * =====================================================
+         * DIŞ ALANI KARART
+         * =====================================================
+         */
+
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    compositingStrategy =
+                        CompositingStrategy.Offscreen
+                }
+        ) {
+
+            drawRect(
+                color =
+                    Color.Black.copy(alpha = 0.50f)
+            )
+
+            /*
+             * KARE OKUMA ALANI
+             */
+
+            val scanSize =
+                minOf(
+                    size.width * 0.76f,
+                    size.height * 0.34f
                 )
-                .build()
 
-        imageCapture.takePicture(
+            val left =
+                (size.width - scanSize) / 2f
 
-            outputOptions,
+            val top =
+                (size.height - scanSize) / 2f
 
-            ContextCompat.getMainExecutor(context),
+            drawRect(
+                color = Color.Transparent,
 
-            object :
-                ImageCapture.OnImageSavedCallback {
+                topLeft =
+                    androidx.compose.ui.geometry.Offset(
+                        x = left,
+                        y = top
+                    ),
 
-                override fun onImageSaved(
-                    outputFileResults:
-                    ImageCapture.OutputFileResults
-                ) {
+                size =
+                    androidx.compose.ui.geometry.Size(
+                        width = scanSize,
+                        height = scanSize
+                    ),
 
-                    try {
+                blendMode = BlendMode.Clear
+            )
+        }
 
-                        val bitmap =
-                            BitmapFactory.decodeFile(
-                                temporaryFile.absolutePath
-                            )
+        /*
+         * =====================================================
+         * KARE ÇERÇEVE
+         * =====================================================
+         */
 
-                        temporaryFile.delete()
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(280.dp)
+        ) {
 
-                        if (bitmap != null) {
+            ScannerSquare(
+                success = success
+            )
+        }
+    }
+}
 
-                            onBitmapReady(
-                                bitmap
-                            )
 
-                        } else {
+/*
+ * =============================================================
+ * KARE ÇERÇEVE + LAZER
+ * =============================================================
+ */
 
-                            onError()
-                        }
+@Composable
+private fun ScannerSquare(
+    success: Boolean
+) {
 
-                    } catch (_: Exception) {
+    Canvas(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
-                        temporaryFile.delete()
+        val corner =
+            42.dp.toPx()
 
-                        onError()
-                    }
-                }
+        val stroke =
+            4.dp.toPx()
 
-                override fun onError(
-                    exception:
-                    ImageCaptureException
-                ) {
-
-                    temporaryFile.delete()
-
-                    onError()
-                }
+        val frameColor =
+            if (success) {
+                SuccessGreen
+            } else {
+                Color.White
             }
+
+        /*
+         * =====================================================
+         * SOL ÜST
+         * =====================================================
+         */
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    corner
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    0f
+                ),
+            strokeWidth = stroke
         )
 
-        return
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    0f
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    corner,
+                    0f
+                ),
+            strokeWidth = stroke
+        )
+
+        /*
+         * =====================================================
+         * SAĞ ÜST
+         * =====================================================
+         */
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    size.width - corner,
+                    0f
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    0f
+                ),
+            strokeWidth = stroke
+        )
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    0f
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    corner
+                ),
+            strokeWidth = stroke
+        )
+
+        /*
+         * =====================================================
+         * SOL ALT
+         * =====================================================
+         */
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    size.height - corner
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    size.height
+                ),
+            strokeWidth = stroke
+        )
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    0f,
+                    size.height
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    corner,
+                    size.height
+                ),
+            strokeWidth = stroke
+        )
+
+        /*
+         * =====================================================
+         * SAĞ ALT
+         * =====================================================
+         */
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    size.width - corner,
+                    size.height
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    size.height
+                ),
+            strokeWidth = stroke
+        )
+
+        drawLine(
+            color = frameColor,
+            start =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    size.height - corner
+                ),
+            end =
+                androidx.compose.ui.geometry.Offset(
+                    size.width,
+                    size.height
+                ),
+            strokeWidth = stroke
+        )
+
+        /*
+         * =====================================================
+         * KIRMIZI LAZER ÇİZGİSİ
+         * =====================================================
+         */
+
+        if (!success) {
+
+            drawLine(
+                color = DarkRed.copy(alpha = 0.95f),
+
+                start =
+                    androidx.compose.ui.geometry.Offset(
+                        18.dp.toPx(),
+                        size.height / 2f
+                    ),
+
+                end =
+                    androidx.compose.ui.geometry.Offset(
+                        size.width - 18.dp.toPx(),
+                        size.height / 2f
+                    ),
+
+                strokeWidth = 3.dp.toPx()
+            )
+        }
     }
+}
 
-    // =========================================================
-    // ANA ÜRÜN MODU
-    // =========================================================
 
-    val fileName =
-        "depo_etiket_${
-            SimpleDateFormat(
-                "yyyyMMdd_HHmmss",
-                Locale.US
-            ).format(Date())
-        }.jpg"
+/*
+ * =============================================================
+ * BARKOD OKUMA SESİ
+ * =============================================================
+ */
 
-    val contentValues =
-        ContentValues().apply {
+private fun playBarcodeSound(
+    context: Context
+) {
 
-            put(
-                MediaStore.MediaColumns.DISPLAY_NAME,
-                fileName
+    try {
+
+        val toneGenerator =
+            ToneGenerator(
+                AudioManager.STREAM_NOTIFICATION,
+                100
             )
 
-            put(
-                MediaStore.MediaColumns.MIME_TYPE,
-                "image/jpeg"
+        toneGenerator.startTone(
+            ToneGenerator.TONE_PROP_BEEP,
+            180
+        )
+
+        Handler(
+            Looper.getMainLooper()
+        ).postDelayed({
+
+            toneGenerator.release()
+
+        }, 300)
+
+    } catch (_: Exception) {
+    }
+}
+
+
+/*
+ * =============================================================
+ * BARKOD OKUMA TİTREŞİMİ
+ * =============================================================
+ */
+
+private fun vibrateOnScan(
+    context: Context
+) {
+
+    try {
+
+        val vibrator =
+            context.getSystemService(
+                Context.VIBRATOR_SERVICE
+            ) as? Vibrator
+
+        vibrator ?: return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            vibrator.vibrate(
+                VibrationEffect.createOneShot(
+                    70L,
+                    VibrationEffect.DEFAULT_AMPLITUDE
+                )
             )
 
-            put(
-                MediaStore.MediaColumns.RELATIVE_PATH,
-                Environment.DIRECTORY_PICTURES +
-                        "/DepoTakipAI"
-            )
+        } else {
+
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(70L)
         }
 
-    val outputOptions =
-        ImageCapture.OutputFileOptions.Builder(
-
-            context.contentResolver,
-
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-
-            contentValues
-
-        ).build()
-
-    imageCapture.takePicture(
-
-        outputOptions,
-
-        ContextCompat.getMainExecutor(context),
-
-        object :
-            ImageCapture.OnImageSavedCallback {
-
-            override fun onImageSaved(
-                outputFileResults:
-                ImageCapture.OutputFileResults
-            ) {
-
-                try {
-
-                    val uri =
-                        outputFileResults.savedUri
-                            ?: run {
-
-                                onError()
-
-                                return
-                            }
-
-                    val inputStream =
-                        context.contentResolver
-                            .openInputStream(uri)
-
-                    val bitmap =
-                        inputStream?.use {
-
-                            BitmapFactory.decodeStream(it)
-                        }
-
-                    if (bitmap != null) {
-
-                        onBitmapReady(
-                            bitmap
-                        )
-
-                    } else {
-
-                        onError()
-                    }
-
-                } catch (_: Exception) {
-
-                    onError()
-                }
-            }
-
-            override fun onError(
-                exception:
-                ImageCaptureException
-            ) {
-
-                onError()
-            }
-        }
-    )
+    } catch (_: Exception) {
+    }
 }
