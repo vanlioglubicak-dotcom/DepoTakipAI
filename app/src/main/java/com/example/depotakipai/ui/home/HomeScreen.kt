@@ -30,6 +30,7 @@ private val SteelBlue = Color(0xFF4682B4)
 private val Gray = Color(0xFF808080)
 private val Background = Color(0xFFF5F5F5)
 private val TextDark = Color(0xFF222222)
+private val CatalogBlue = Color(0xFF5C6BC0)
 
 @Composable
 fun HomeScreen(
@@ -39,7 +40,9 @@ fun HomeScreen(
     onSettingsClick: () -> Unit = {},
     onWarehouseClick: () -> Unit = {},
     onIncomingReturnClick: () -> Unit = {},
-    onOutgoingReturnClick: () -> Unit = {}
+    onOutgoingReturnClick: () -> Unit = {},
+    onListsClick: () -> Unit = {},
+    onCatalogClick: () -> Unit = {}
 ) {
 
     Box(
@@ -77,7 +80,9 @@ fun HomeScreen(
                 DashboardGrid(
                     onProductsClick = onProductsClick,
                     onReturnsClick = onReturnsClick,
-                    onWarehouseClick = onWarehouseClick
+                    onWarehouseClick = onWarehouseClick,
+                    onListsClick = onListsClick,
+                    onCatalogClick = onCatalogClick
                 )
 
                 Spacer(
@@ -162,12 +167,18 @@ private fun HomeHeader() {
 private fun DashboardGrid(
     onProductsClick: () -> Unit,
     onReturnsClick: () -> Unit,
-    onWarehouseClick: () -> Unit
+    onWarehouseClick: () -> Unit,
+    onListsClick: () -> Unit,
+    onCatalogClick: () -> Unit
 ) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+
+        // --------------------------------------------------------
+        // 1. SATIR
+        // --------------------------------------------------------
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -197,6 +208,10 @@ private fun DashboardGrid(
             )
         }
 
+        // --------------------------------------------------------
+        // 2. SATIR
+        // --------------------------------------------------------
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -214,17 +229,37 @@ private fun DashboardGrid(
             )
 
             DashboardCard(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        onListsClick()
+                    },
                 symbol = "▤",
-                title = "Kamera",
+                title = "Listeler",
                 color = DarkRed
             )
         }
+
+        // --------------------------------------------------------
+        // KATALOG
+        // --------------------------------------------------------
+
+        DashboardWideCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onCatalogClick()
+                },
+            symbol = "▦",
+            title = "Katalog",
+            subtitle = "Ürün ve katalog yönetimi",
+            color = CatalogBlue
+        )
     }
 }
 
 // ================================================================
-// DASHBOARD KARTI
+// NORMAL DASHBOARD KARTI
 // ================================================================
 
 @Composable
@@ -274,6 +309,81 @@ private fun DashboardCard(
                 fontWeight = FontWeight.SemiBold,
                 color = TextDark
             )
+        }
+    }
+}
+
+// ================================================================
+// KATALOG KARTI
+// ================================================================
+
+@Composable
+private fun DashboardWideCard(
+    modifier: Modifier,
+    symbol: String,
+    title: String,
+    subtitle: String,
+    color: Color
+) {
+
+    Box(
+        modifier = modifier
+            .height(105.dp)
+            .background(
+                color = Color.White,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(16.dp)
+    ) {
+
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = color.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Text(
+                    text = symbol,
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.padding(
+                    horizontal = 8.dp
+                )
+            )
+
+            Column {
+
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
+
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = Gray
+                )
+            }
         }
     }
 }

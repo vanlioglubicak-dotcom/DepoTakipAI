@@ -39,17 +39,16 @@ fun BottomNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 10.dp
-            )
+            .shadow(elevation = 10.dp)
             .background(Color.White)
             .navigationBarsPadding()
-            .height(78.dp)
-            .padding(horizontal = 8.dp)
     ) {
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(78.dp)
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -105,8 +104,9 @@ private fun NavigationItem(
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 5.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
 
         Text(

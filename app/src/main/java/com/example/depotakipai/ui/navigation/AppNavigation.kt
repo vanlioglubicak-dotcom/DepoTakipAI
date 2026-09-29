@@ -427,14 +427,6 @@ fun AppNavigation() {
 
                     onFinished = { batch ->
 
-                        /*
-                         * Kamera taraması tamamlandı.
-                         *
-                         * Sonraki aşamada bu batch,
-                         * CameraScanSummaryScreen'e
-                         * gönderilecek.
-                         */
-
                         cameraBatch =
                             batch
 
@@ -868,12 +860,6 @@ fun AppNavigation() {
         /*
          * =========================================================
          * HIZLI İŞLEMLER
-         *
-         * + AÇILDIĞINDA:
-         *
-         * YENİ ÜRÜN
-         * GELEN İADE
-         * GİDEN İADE
          * =========================================================
          */
 
@@ -936,84 +922,92 @@ fun AppNavigation() {
         /*
          * =========================================================
          * GLOBAL ALT MENÜ
+         *
+         * ÜRÜNLER EKRANINDA GÖSTERİLMEZ.
+         *
+         * Çünkü ProductsScreen kendi alt menüsünü
+         * zaten gösteriyor.
          * =========================================================
          */
 
-        BottomNavigationBar(
+        if (currentScreen != AppScreen.PRODUCTS) {
 
-            modifier =
-                Modifier.align(
-                    Alignment.BottomCenter
-                ),
+            BottomNavigationBar(
 
-            selectedItem = when (currentScreen) {
+                modifier =
+                    Modifier.align(
+                        Alignment.BottomCenter
+                    ),
 
-                AppScreen.HOME ->
-                    BottomNavigationItemType.HOME
+                selectedItem = when (currentScreen) {
 
-                AppScreen.PRODUCTS,
-                AppScreen.ADD_PRODUCT,
-                AppScreen.CAMERA ->
-                    BottomNavigationItemType.PRODUCTS
+                    AppScreen.HOME ->
+                        BottomNavigationItemType.HOME
 
-                AppScreen.RETURNS,
-                AppScreen.INCOMING_RETURN,
-                AppScreen.INCOMING_RETURN_REVIEW,
-                AppScreen.OUTGOING_RETURN ->
-                    BottomNavigationItemType.RETURNS
+                    AppScreen.PRODUCTS,
+                    AppScreen.ADD_PRODUCT,
+                    AppScreen.CAMERA ->
+                        BottomNavigationItemType.PRODUCTS
 
-                AppScreen.SETTINGS ->
-                    BottomNavigationItemType.SETTINGS
+                    AppScreen.RETURNS,
+                    AppScreen.INCOMING_RETURN,
+                    AppScreen.INCOMING_RETURN_REVIEW,
+                    AppScreen.OUTGOING_RETURN ->
+                        BottomNavigationItemType.RETURNS
 
-                AppScreen.WAREHOUSE,
-                AppScreen.WAREHOUSE_ROW,
-                AppScreen.WAREHOUSE_RACK,
-                AppScreen.WAREHOUSE_LOCATION,
-                AppScreen.LISTS ->
-                    BottomNavigationItemType.HOME
-            },
+                    AppScreen.SETTINGS ->
+                        BottomNavigationItemType.SETTINGS
 
-            onHomeClick = {
+                    AppScreen.WAREHOUSE,
+                    AppScreen.WAREHOUSE_ROW,
+                    AppScreen.WAREHOUSE_RACK,
+                    AppScreen.WAREHOUSE_LOCATION,
+                    AppScreen.LISTS ->
+                        BottomNavigationItemType.HOME
+                },
 
-                quickActionVisible =
-                    false
+                onHomeClick = {
 
-                currentScreen =
-                    AppScreen.HOME
-            },
+                    quickActionVisible =
+                        false
 
-            onProductsClick = {
+                    currentScreen =
+                        AppScreen.HOME
+                },
 
-                quickActionVisible =
-                    false
+                onProductsClick = {
 
-                currentScreen =
-                    AppScreen.PRODUCTS
-            },
+                    quickActionVisible =
+                        false
 
-            onQuickActionClick = {
+                    currentScreen =
+                        AppScreen.PRODUCTS
+                },
 
-                quickActionVisible =
-                    !quickActionVisible
-            },
+                onQuickActionClick = {
 
-            onReturnsClick = {
+                    quickActionVisible =
+                        !quickActionVisible
+                },
 
-                quickActionVisible =
-                    false
+                onReturnsClick = {
 
-                currentScreen =
-                    AppScreen.RETURNS
-            },
+                    quickActionVisible =
+                        false
 
-            onSettingsClick = {
+                    currentScreen =
+                        AppScreen.RETURNS
+                },
 
-                quickActionVisible =
-                    false
+                onSettingsClick = {
 
-                currentScreen =
-                    AppScreen.SETTINGS
-            }
-        )
+                    quickActionVisible =
+                        false
+
+                    currentScreen =
+                        AppScreen.SETTINGS
+                }
+            )
+        }
     }
 }

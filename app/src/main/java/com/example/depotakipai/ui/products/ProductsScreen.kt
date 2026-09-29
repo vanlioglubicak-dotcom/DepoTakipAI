@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+import com.example.depotakipai.ui.components.BottomNavigationBar
+import com.example.depotakipai.ui.components.BottomNavigationItemType
 
 private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
@@ -125,10 +127,6 @@ fun ProductsScreen(
             .statusBarsPadding()
     ) {
 
-        // =========================================================
-        // ÜST İÇERİK
-        // =========================================================
-
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -138,9 +136,9 @@ fun ProductsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            // -----------------------------------------------------
+            // =====================================================
             // BAŞLIK
-            // -----------------------------------------------------
+            // =====================================================
 
             item {
 
@@ -191,9 +189,9 @@ fun ProductsScreen(
                 }
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // ARAMA
-            // -----------------------------------------------------
+            // =====================================================
 
             item {
 
@@ -216,9 +214,9 @@ fun ProductsScreen(
                 )
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // ÖZET
-            // -----------------------------------------------------
+            // =====================================================
 
             item {
 
@@ -261,9 +259,9 @@ fun ProductsScreen(
                 }
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // LİSTE BAŞLIĞI
-            // -----------------------------------------------------
+            // =====================================================
 
             item {
 
@@ -275,9 +273,9 @@ fun ProductsScreen(
                 )
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // YÜKLENİYOR
-            // -----------------------------------------------------
+            // =====================================================
 
             if (isLoading) {
 
@@ -299,9 +297,9 @@ fun ProductsScreen(
                 }
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // ÜRÜN YOK
-            // -----------------------------------------------------
+            // =====================================================
 
             else if (filteredProducts.isEmpty()) {
 
@@ -360,9 +358,9 @@ fun ProductsScreen(
                 }
             }
 
-            // -----------------------------------------------------
+            // =====================================================
             // ÜRÜNLER
-            // -----------------------------------------------------
+            // =====================================================
 
             else {
 
@@ -388,14 +386,32 @@ fun ProductsScreen(
         }
 
         // =========================================================
-        // ALT MENÜ
+        // ANA SAYFAYLA AYNI ORTAK ALT MENÜ
         // =========================================================
 
-        ProductBottomNavigation(
-            onHomeClick = onBack,
-            onAddClick = onAddProduct,
-            onReturnsClick = onReturnsClick,
-            onSettingsClick = onSettingsClick
+        BottomNavigationBar(
+
+            selectedItem = BottomNavigationItemType.PRODUCTS,
+
+            onHomeClick = {
+                onBack()
+            },
+
+            onProductsClick = {
+                // Zaten Ürünler ekranındayız.
+            },
+
+            onQuickActionClick = {
+                onAddProduct()
+            },
+
+            onReturnsClick = {
+                onReturnsClick()
+            },
+
+            onSettingsClick = {
+                onSettingsClick()
+            }
         )
     }
 }
@@ -432,133 +448,5 @@ private fun ProductSummaryItem(
             fontWeight = FontWeight.Bold,
             color = Gray
         )
-    }
-}
-
-// =================================================================
-// ÜRÜNLER SAYFASI ALT MENÜSÜ
-// =================================================================
-
-@Composable
-private fun ProductBottomNavigation(
-    onHomeClick: () -> Unit,
-    onAddClick: () -> Unit,
-    onReturnsClick: () -> Unit,
-    onSettingsClick: () -> Unit
-) {
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .navigationBarsPadding()
-            .padding(
-                horizontal = 8.dp,
-                vertical = 8.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-
-        BottomNavigationItem(
-            icon = "⌂",
-            title = "Ana Sayfa",
-            selected = false,
-            onClick = onHomeClick
-        )
-
-        BottomNavigationItem(
-            icon = "▣",
-            title = "Ürün",
-            selected = true,
-            onClick = {}
-        )
-
-        Button(
-            onClick = onAddClick,
-            modifier = Modifier.height(64.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = DarkRed
-            ),
-            shape = RoundedCornerShape(50)
-        ) {
-
-            Text(
-                text = "+",
-                fontSize = 30.sp,
-                color = Color.White,
-                fontWeight = FontWeight.Normal
-            )
-        }
-
-        BottomNavigationItem(
-            icon = "↩",
-            title = "İade",
-            selected = false,
-            onClick = onReturnsClick
-        )
-
-        BottomNavigationItem(
-            icon = "⚙",
-            title = "Ayarlar",
-            selected = false,
-            onClick = onSettingsClick
-        )
-    }
-}
-
-// =================================================================
-// ALT MENÜ ELEMANI
-// =================================================================
-
-@Composable
-private fun BottomNavigationItem(
-    icon: String,
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor =
-                if (selected) {
-                    DarkRed
-                } else {
-                    Gray
-                }
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-
-        Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
-
-            Text(
-                text = icon,
-                fontSize = 22.sp,
-                color =
-                    if (selected) {
-                        DarkRed
-                    } else {
-                        Gray
-                    }
-            )
-
-            Text(
-                text = title,
-                fontSize = 10.sp,
-                color =
-                    if (selected) {
-                        DarkRed
-                    } else {
-                        Gray
-                    }
-            )
-        }
     }
 }
