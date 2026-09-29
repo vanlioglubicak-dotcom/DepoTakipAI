@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +28,7 @@ private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
 private val Gray = Color(0xFF808080)
 private val LightBackground = Color(0xFFF5F5F5)
+private val TextDark = Color(0xFF222222)
 
 enum class ListCategory {
     ANA_LISTE,
@@ -43,13 +43,17 @@ fun ListsScreen(
     onBack: () -> Unit,
     onCategoryClick: (ListCategory) -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(LightBackground)
     ) {
 
-        // ÜST BAŞLIK
+        // =========================================================
+        // BAŞLIK
+        // =========================================================
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,6 +65,7 @@ fun ListsScreen(
                     bottom = 18.dp
                 )
         ) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -73,12 +78,15 @@ fun ListsScreen(
                     fontWeight = FontWeight.Light,
                     modifier = Modifier
                         .size(42.dp)
-                        .clickable { onBack() }
+                        .clickable {
+                            onBack()
+                        }
                 )
 
                 Column(
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
+
                     Text(
                         text = "LİSTELER",
                         color = Color.White,
@@ -86,7 +94,9 @@ fun ListsScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(
+                        modifier = Modifier.height(2.dp)
+                    )
 
                     Text(
                         text = "Depo hareketleri",
@@ -97,6 +107,10 @@ fun ListsScreen(
             }
         }
 
+        // =========================================================
+        // LİSTELER
+        // =========================================================
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,48 +118,45 @@ fun ListsScreen(
                     horizontal = 16.dp,
                     vertical = 18.dp
                 ),
+
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            ListCategoryCard(
-                title = "Ana Liste",
-                description = "Onaylanan tüm depo hareketleri",
-                icon = "☷",
-                color = DarkRed,
-                onClick = {
-                    onCategoryClick(ListCategory.ANA_LISTE)
-                }
-            )
+            // -----------------------------------------------------
+            // YENİ ÜRÜNLER
+            // -----------------------------------------------------
 
             ListCategoryCard(
-                title = "Yeni Gelen",
-                description = "Yeni gelen ürün listeleri",
+                title = "Yeni Ürünler",
+                description = "Yeni gelen ürünler",
                 icon = "↓",
                 color = SteelBlue,
                 onClick = {
-                    onCategoryClick(ListCategory.YENI_GELEN)
+                    onCategoryClick(
+                        ListCategory.YENI_GELEN
+                    )
                 }
             )
+
+            // -----------------------------------------------------
+            // GİDEN
+            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Giden",
-                description = "Depodan çıkan ürün listeleri",
+                description = "Depodan çıkan ürünler",
                 icon = "↑",
                 color = Gray,
                 onClick = {
-                    onCategoryClick(ListCategory.GIDEN)
+                    onCategoryClick(
+                        ListCategory.GIDEN
+                    )
                 }
             )
 
-            ListCategoryCard(
-                title = "Giden İade",
-                description = "Depodan gönderilen iadeler",
-                icon = "↗",
-                color = DarkRed,
-                onClick = {
-                    onCategoryClick(ListCategory.GIDEN_IADE)
-                }
-            )
+            // -----------------------------------------------------
+            // GELEN İADE
+            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Gelen İade",
@@ -153,12 +164,53 @@ fun ListsScreen(
                 icon = "↙",
                 color = SteelBlue,
                 onClick = {
-                    onCategoryClick(ListCategory.GELEN_IADE)
+                    onCategoryClick(
+                        ListCategory.GELEN_IADE
+                    )
+                }
+            )
+
+            // -----------------------------------------------------
+            // GİDEN İADE
+            // -----------------------------------------------------
+
+            ListCategoryCard(
+                title = "Giden İade",
+                description = "Depodan gönderilen iadeler",
+                icon = "↗",
+                color = DarkRed,
+                onClick = {
+                    onCategoryClick(
+                        ListCategory.GIDEN_IADE
+                    )
+                }
+            )
+
+            // -----------------------------------------------------
+            // OKUNANLAR
+            //
+            // Mevcut ANA_LISTE enum değeri şimdilik korunuyor.
+            // Daha sonra kamera onay kayıtlarını buraya bağlayacağız.
+            // -----------------------------------------------------
+
+            ListCategoryCard(
+                title = "Okunanlar",
+                description = "Kamera ile onaylanan ürün listeleri",
+                icon = "▤",
+                color = DarkRed,
+                onClick = {
+                    onCategoryClick(
+                        ListCategory.ANA_LISTE
+                    )
                 }
             )
         }
     }
 }
+
+// =====================================================================
+// LİSTE KARTI
+// =====================================================================
 
 @Composable
 private fun ListCategoryCard(
@@ -168,19 +220,26 @@ private fun ListCategoryCard(
     color: Color,
     onClick: () -> Unit
 ) {
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(88.dp)
-            .clickable { onClick() },
+            .clickable {
+                onClick()
+            },
+
         shape = RoundedCornerShape(16.dp),
+
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
+
         elevation = CardDefaults.cardElevation(
             defaultElevation = 3.dp
         )
     ) {
+
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -188,18 +247,27 @@ private fun ListCategoryCard(
                     horizontal = 18.dp,
                     vertical = 12.dp
                 ),
+
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            // =====================================================
+            // İKON
+            // =====================================================
 
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .background(
-                        color = color.copy(alpha = 0.12f),
+                        color = color.copy(
+                            alpha = 0.12f
+                        ),
                         shape = RoundedCornerShape(14.dp)
                     ),
+
                 contentAlignment = Alignment.Center
             ) {
+
                 Text(
                     text = icon,
                     color = color,
@@ -208,19 +276,26 @@ private fun ListCategoryCard(
                 )
             }
 
+            // =====================================================
+            // YAZI
+            // =====================================================
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 16.dp)
             ) {
+
                 Text(
                     text = title,
-                    color = Color(0xFF222222),
+                    color = TextDark,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
 
                 Text(
                     text = description,
@@ -228,6 +303,10 @@ private fun ListCategoryCard(
                     fontSize = 12.sp
                 )
             }
+
+            // =====================================================
+            // SAĞ OK
+            // =====================================================
 
             Text(
                 text = "›",
