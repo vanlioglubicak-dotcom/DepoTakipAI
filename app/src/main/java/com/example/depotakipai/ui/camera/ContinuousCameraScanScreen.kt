@@ -63,10 +63,10 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Executors
 
-private val DarkRed = Color(0xFF8B0000)
-private val SteelBlue = Color(0xFF4682B4)
-private val RejectRed = Color(0xFFB3261E)
-private val SuccessGreen = Color(0xFF2E7D32)
+private val StormBlue = Color(0xFF34506D)
+private val BlueSlate = Color(0xFF557392)
+private val DuskBlue = Color(0xFF7A8CA6)
+private val FoggyBlue = Color(0xFFA1B2C4)
 private val DarkOverlay = Color.Black.copy(alpha = 0.48f)
 
 @Composable
@@ -637,7 +637,7 @@ fun ContinuousCameraScanScreen(
                         )
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkRed
+                        containerColor = StormBlue
                     )
                 ) {
                     Text("KAMERA İZNİ VER")
@@ -669,7 +669,7 @@ fun ContinuousCameraScanScreen(
                 title = "OKUNAN",
                 value =
                     scanBatch.totalQuantity.toString(),
-                color = DarkRed,
+                color = StormBlue,
                 onClick = {
                     showReadList = true
                 }
@@ -682,7 +682,7 @@ fun ContinuousCameraScanScreen(
                     scanBatch
                         .differentProductCount
                         .toString(),
-                color = SuccessGreen
+                color = FoggyBlue
             )
         }
 
@@ -733,7 +733,7 @@ fun ContinuousCameraScanScreen(
 
                         Text(
                             text = "ÜRÜN OKUNDU",
-                            color = SuccessGreen,
+                            color = BlueSlate,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -747,7 +747,7 @@ fun ContinuousCameraScanScreen(
                             text =
                                 pendingProductCode
                                     ?: item.productCode,
-                            color = DarkRed,
+                            color = StormBlue,
                             fontSize = 21.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -784,7 +784,7 @@ fun ContinuousCameraScanScreen(
                         Text(
                             text =
                                 "Adet: $pendingQuantity",
-                            color = DarkRed,
+                            color = StormBlue,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -840,15 +840,15 @@ fun ContinuousCameraScanScreen(
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor =
-                                Color.White,
+                                FoggyBlue,
                             contentColor =
-                                RejectRed
+                                StormBlue
                         )
                 ) {
 
                     Text(
                         text = "REDDET",
-                        color = RejectRed,
+                        color = StormBlue,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -908,15 +908,15 @@ fun ContinuousCameraScanScreen(
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor =
-                                Color.White,
+                                BlueSlate,
                             contentColor =
-                                SuccessGreen
+                                Color.White
                         )
                 ) {
 
                     Text(
                         text = "ONAYLA",
-                        color = SuccessGreen,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -944,8 +944,8 @@ fun ContinuousCameraScanScreen(
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor =
-                            Color.Black.copy(
-                                alpha = 0.65f
+                            StormBlue.copy(
+                                alpha = 0.90f
                             )
                     )
             ) {
@@ -976,8 +976,8 @@ fun ContinuousCameraScanScreen(
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor =
-                        Color.Black.copy(
-                            alpha = 0.55f
+                        StormBlue.copy(
+                            alpha = 0.88f
                         )
                 )
         ) {
@@ -1037,8 +1037,8 @@ private fun ScanInfoButton(
                 onClick = onClick
             )
             .background(
-                Color.Black.copy(
-                    alpha = 0.58f
+                StormBlue.copy(
+                    alpha = 0.92f
                 ),
                 RoundedCornerShape(12.dp)
             )
@@ -1124,9 +1124,9 @@ private fun ScanAreaOverlay(
                     width = 5.dp,
                     color =
                         if (success) {
-                            SuccessGreen
+                            BlueSlate
                         } else {
-                            SuccessGreen
+                            DuskBlue
                         },
                     shape =
                         RoundedCornerShape(0.dp)
@@ -1148,8 +1148,8 @@ private fun ReadProductListOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Color.Black.copy(
-                    alpha = 0.72f
+                StormBlue.copy(
+                    alpha = 0.88f
                 )
             )
             .padding(
@@ -1181,7 +1181,7 @@ private fun ReadProductListOverlay(
 
                 Text(
                     text = "OKUNAN ÜRÜNLER",
-                    color = DarkRed,
+                    color = StormBlue,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -1191,7 +1191,7 @@ private fun ReadProductListOverlay(
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor =
-                                DarkRed
+                                StormBlue
                         ),
                     shape =
                         RoundedCornerShape(10.dp)
@@ -1236,7 +1236,7 @@ private fun ReadProductListOverlay(
                                     bottom = 10.dp
                                 )
                                 .background(
-                                    Color(0xFFF5F5F5),
+                                    FoggyBlue.copy(alpha = 0.18f),
                                     RoundedCornerShape(
                                         10.dp
                                     )
@@ -1247,7 +1247,7 @@ private fun ReadProductListOverlay(
                             Text(
                                 text =
                                     productSummary.productCode,
-                                color = DarkRed,
+                                color = StormBlue,
                                 fontSize = 16.sp,
                                 fontWeight =
                                     FontWeight.Bold

@@ -11,17 +11,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.depotakipai.data.local.DatabaseProvider
+import com.example.depotakipai.data.repository.DepotListRecordRepository
 import com.example.depotakipai.domain.model.CameraScanBatch
+import com.example.depotakipai.domain.model.DepotListCategory
 import com.example.depotakipai.domain.model.IncomingReturnAnalysisResult
 import com.example.depotakipai.domain.model.WarehouseLocation
 import com.example.depotakipai.domain.model.WarehouseRack
 import com.example.depotakipai.domain.model.WarehouseRow
+import com.example.depotakipai.domain.usecase.GetDepotListRecordsUseCase
+import com.example.depotakipai.domain.usecase.SaveDepotListRecordUseCase
 import com.example.depotakipai.ui.camera.ContinuousCameraScanScreen
 import com.example.depotakipai.ui.components.BottomNavigationBar
 import com.example.depotakipai.ui.components.BottomNavigationItemType
 import com.example.depotakipai.ui.components.QuickActionMenu
 import com.example.depotakipai.ui.home.HomeScreen
+import com.example.depotakipai.ui.lists.DepotListDetailScreen
+import com.example.depotakipai.ui.lists.DepotListViewModel
+import com.example.depotakipai.ui.lists.DepotListViewModelFactory
 import com.example.depotakipai.ui.lists.ListCategory
 import com.example.depotakipai.ui.lists.ListsScreen
 import com.example.depotakipai.ui.products.AddProductScreen
@@ -36,21 +44,17 @@ private enum class AppScreen {
     HOME,
     PRODUCTS,
     ADD_PRODUCT,
-
     CAMERA,
-
     RETURNS,
     INCOMING_RETURN,
     OUTGOING_RETURN,
-
     INCOMING_RETURN_REVIEW,
-
     WAREHOUSE,
     WAREHOUSE_ROW,
     WAREHOUSE_RACK,
     WAREHOUSE_LOCATION,
-
     LISTS,
+    LIST_DETAIL,
     SETTINGS
 }
 
@@ -88,14 +92,62 @@ fun AppNavigation() {
         mutableStateOf(CameraScanBatch())
     }
 
-    /*
-     * Eski ürün kamera sonucu artık kullanılmıyor.
-     * Yeni sistem CameraScanBatch kullanıyor.
-     */
-
     var incomingReturnAnalysisResult by remember {
         mutableStateOf<IncomingReturnAnalysisResult?>(null)
     }
+
+    /*
+     * =========================================================
+     * LİSTE SEÇİMİ
+     * =========================================================
+     */
+
+    var selectedListCategory by remember {
+        mutableStateOf<DepotListCategory?>(null)
+    }
+
+    /*
+     * =========================================================
+     * LİSTE VERİTABANI / VIEWMODEL
+     * =========================================================
+     */
+
+    val database = remember {
+        DatabaseProvider.getDatabase(context)
+    }
+
+    val depotListRepository = remember(database) {
+        DepotListRecordRepository(
+            dao = database.depotListRecordDao()
+        )
+    }
+
+    val getDepotListRecordsUseCase = remember(depotListRepository) {
+        GetDepotListRecordsUseCase(
+            repository = depotListRepository
+        )
+    }
+
+    val saveDepotListRecordUseCase = remember(depotListRepository) {
+        SaveDepotListRecordUseCase(
+            repository = depotListRepository
+        )
+    }
+
+    val depotListViewModel: DepotListViewModel =
+        viewModel(
+            factory = remember(
+                getDepotListRecordsUseCase,
+                saveDepotListRecordUseCase
+            ) {
+                DepotListViewModelFactory(
+                    getDepotListRecordsUseCase =
+                        getDepotListRecordsUseCase,
+                    saveDepotListRecordUseCase =
+                        saveDepotListRecordUseCase
+                )
+            }
+        )
 
     /*
      * =========================================================
@@ -186,6 +238,9 @@ fun AppNavigation() {
                 AppScreen.LISTS ->
                     AppScreen.WAREHOUSE
 
+                AppScreen.LIST_DETAIL ->
+                    AppScreen.LISTS
+
                 AppScreen.SETTINGS ->
                     AppScreen.HOME
 
@@ -267,6 +322,14 @@ fun AppNavigation() {
 
                         currentScreen =
                             AppScreen.WAREHOUSE
+                    },
+
+                    onListsClick = {
+
+                        quickActionVisible = false
+
+                        currentScreen =
+                            AppScreen.LISTS
                     },
 
                     onIncomingReturnClick = {
@@ -394,12 +457,6 @@ fun AppNavigation() {
             /*
              * =================================================
              * ORTAK SÜREKLİ KAMERA
-             *
-             * YENİ ÜRÜN
-             * GELEN İADE
-             * GİDEN İADE
-             *
-             * ÜÇÜ DE AYNI KAMERA
              * =================================================
              */
 
@@ -498,9 +555,6 @@ fun AppNavigation() {
 
             AppScreen.INCOMING_RETURN -> {
 
-                val database =
-                    DatabaseProvider.getDatabase(context)
-
                 IncomingReturnScreen(
 
                     database = database,
@@ -520,9 +574,6 @@ fun AppNavigation() {
              */
 
             AppScreen.INCOMING_RETURN_REVIEW -> {
-
-                val database =
-                    DatabaseProvider.getDatabase(context)
 
                 val result =
                     incomingReturnAnalysisResult
@@ -555,7 +606,7 @@ fun AppNavigation() {
                         },
 
                         onEdit = {
-                            // Düzenleme akışı korunuyor.
+                            // Mevcut düzenleme akışı korunuyor.
                         },
 
                         onConfirmSuccess = {
@@ -577,9 +628,6 @@ fun AppNavigation() {
              */
 
             AppScreen.OUTGOING_RETURN -> {
-
-                val database =
-                    DatabaseProvider.getDatabase(context)
 
                 OutgoingReturnScreen(
 
@@ -787,25 +835,63 @@ fun AppNavigation() {
 
                     onCategoryClick = { category ->
 
-                        when (category) {
+                        selectedListCategory =
+                            when (category) {
 
-                            ListCategory.ANA_LISTE -> {
+                                ListCategory.ANA_LISTE ->
+                                    DepotListCategory.OKUNANLAR
+
+                                ListCategory.YENI_GELEN ->
+                                    DepotListCategory.YENI_URUNLER
+
+                                ListCategory.GIDEN ->
+                                    DepotListCategory.GIDEN
+
+                                ListCategory.GIDEN_IADE ->
+                                    DepotListCategory.GIDEN_IADE
+
+                                ListCategory.GELEN_IADE ->
+                                    DepotListCategory.GELEN_IADE
                             }
 
-                            ListCategory.YENI_GELEN -> {
-                            }
-
-                            ListCategory.GIDEN -> {
-                            }
-
-                            ListCategory.GIDEN_IADE -> {
-                            }
-
-                            ListCategory.GELEN_IADE -> {
-                            }
-                        }
+                        currentScreen =
+                            AppScreen.LIST_DETAIL
                     }
                 )
+            }
+
+            /*
+             * =================================================
+             * LİSTE DETAY
+             * =================================================
+             */
+
+            AppScreen.LIST_DETAIL -> {
+
+                val category =
+                    selectedListCategory
+
+                if (category == null) {
+
+                    currentScreen =
+                        AppScreen.LISTS
+
+                } else {
+
+                    DepotListDetailScreen(
+
+                        category = category,
+
+                        viewModel =
+                            depotListViewModel,
+
+                        onBack = {
+
+                            currentScreen =
+                                AppScreen.LISTS
+                        }
+                    )
+                }
             }
 
             /*
@@ -852,6 +938,30 @@ fun AppNavigation() {
 
                         currentScreen =
                             AppScreen.WAREHOUSE
+                    },
+
+                    onIncomingReturnClick = {
+
+                        cameraBatch =
+                            CameraScanBatch()
+
+                        cameraFlow =
+                            CameraFlow.INCOMING_RETURN
+
+                        currentScreen =
+                            AppScreen.CAMERA
+                    },
+
+                    onOutgoingReturnClick = {
+
+                        cameraBatch =
+                            CameraScanBatch()
+
+                        cameraFlow =
+                            CameraFlow.OUTGOING_RETURN
+
+                        currentScreen =
+                            AppScreen.CAMERA
                     }
                 )
             }
@@ -924,9 +1034,6 @@ fun AppNavigation() {
          * GLOBAL ALT MENÜ
          *
          * ÜRÜNLER EKRANINDA GÖSTERİLMEZ.
-         *
-         * Çünkü ProductsScreen kendi alt menüsünü
-         * zaten gösteriyor.
          * =========================================================
          */
 
@@ -962,7 +1069,8 @@ fun AppNavigation() {
                     AppScreen.WAREHOUSE_ROW,
                     AppScreen.WAREHOUSE_RACK,
                     AppScreen.WAREHOUSE_LOCATION,
-                    AppScreen.LISTS ->
+                    AppScreen.LISTS,
+                    AppScreen.LIST_DETAIL ->
                         BottomNavigationItemType.HOME
                 },
 
