@@ -50,11 +50,14 @@ class DepotListViewModel(
 
         viewModelScope.launch {
             if (category == null) {
+
                 getDepotListRecordsUseCase()
                     .collect { records ->
                         _records.value = records
                     }
+
             } else {
+
                 getDepotListRecordsUseCase(category)
                     .collect { records ->
                         _records.value = records
@@ -75,6 +78,7 @@ class DepotListViewModel(
         records: List<DepotListRecord>
     ) {
         viewModelScope.launch {
+
             if (records.isNotEmpty()) {
                 saveDepotListRecordUseCase(records)
             }
@@ -93,6 +97,7 @@ class DepotListViewModel(
         records: List<DepotListRecord>
     ) {
         viewModelScope.launch {
+
             records.forEach { record ->
                 repository.delete(record)
             }
@@ -104,6 +109,29 @@ class DepotListViewModel(
     ) {
         viewModelScope.launch {
             repository.deleteById(id)
+        }
+    }
+
+    fun updateRecords(
+        records: List<DepotListRecord>,
+        productCode: String,
+        color: String,
+        size: String,
+        quantity: Int
+    ) {
+        viewModelScope.launch {
+
+            if (records.isEmpty()) {
+                return@launch
+            }
+
+            saveDepotListRecordUseCase.updateRecords(
+                records = records,
+                productCode = productCode.trim(),
+                color = color.trim(),
+                size = size.trim(),
+                quantity = quantity
+            )
         }
     }
 }

@@ -55,4 +55,40 @@ class DepotListRecordRepository(
     suspend fun deleteAll() {
         dao.deleteAll()
     }
+
+    suspend fun updateRecords(
+        records: List<DepotListRecord>,
+        productCode: String,
+        color: String,
+        size: String,
+        quantity: Int
+    ) {
+        if (records.isEmpty() || quantity <= 0) {
+            return
+        }
+
+        val template = records.first()
+
+        records.forEach { record ->
+            dao.deleteById(record.id)
+        }
+
+        val updatedRecords =
+            List(quantity) {
+                DepotListRecord(
+                    category = template.category,
+                    productCode = productCode.trim(),
+                    color = color.trim(),
+                    size = size.trim(),
+                    quantity = 1,
+                    createdAt = System.currentTimeMillis()
+                )
+            }
+
+        dao.insertAll(
+            updatedRecords.map {
+                it.toEntity()
+            }
+        )
+    }
 }

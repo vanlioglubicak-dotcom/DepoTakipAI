@@ -14,16 +14,24 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.depotakipai.domain.model.DepotListCategory
@@ -39,7 +47,8 @@ private data class GroupedDepotListRecord(
     val color: String,
     val size: String,
     val quantity: Int,
-    val latestCreatedAt: Long
+    val latestCreatedAt: Long,
+    val records: List<DepotListRecord>
 )
 
 @Composable
@@ -64,7 +73,6 @@ fun DepotListDetailScreen(
                 )
             }
             .map { (key, groupedItems) ->
-
                 GroupedDepotListRecord(
                     productCode = key.first,
                     color = key.second,
@@ -74,7 +82,8 @@ fun DepotListDetailScreen(
                     },
                     latestCreatedAt = groupedItems.maxOfOrNull {
                         it.createdAt
-                    } ?: 0L
+                    } ?: 0L,
+                    records = groupedItems
                 )
             }
             .sortedByDescending {
@@ -86,12 +95,134 @@ fun DepotListDetailScreen(
             it.quantity
         }
 
+    var selectedCardKey by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var recordToDelete by remember {
+        mutableStateOf<GroupedDepotListRecord?>(null)
+    }
+
+    var recordToEdit by remember {
+        mutableStateOf<GroupedDepotListRecord?>(null)
+    }
+
+    /*
+     * =========================================================
+     * SİLME DİYALOĞU
+     * =========================================================
+     */
+
+    recordToDelete?.let { record ->
+
+        AlertDialog(
+            onDismissRequest = {
+                recordToDelete = null
+            },
+
+            title = {
+                Text(
+                    text = "Ürünü Sil"
+                )
+            },
+
+            text = {
+                Text(
+                    text =
+                        "${record.productCode} ürününü ve ${record.quantity} adet kaydını silmek istediğinize emin misiniz?"
+                )
+            },
+
+            confirmButton = {
+
+                TextButton(
+                    onClick = {
+
+                        viewModel.deleteRecords(
+                            record.records
+                        )
+
+                        recordToDelete = null
+                        selectedCardKey = null
+                    }
+                ) {
+
+                    Text(
+                        text = "SİL",
+                        color = DarkRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+
+            dismissButton = {
+
+                TextButton(
+                    onClick = {
+                        recordToDelete = null
+                    }
+                ) {
+
+                    Text(
+                        text = "İPTAL"
+                    )
+                }
+            }
+        )
+    }
+
+    /*
+     * =========================================================
+     * DÜZENLEME DİYALOĞU
+     * =========================================================
+     */
+
+    recordToEdit?.let { record ->
+
+        EditDepotListRecordDialog(
+            record = record,
+
+            onDismiss = {
+                recordToEdit = null
+            },
+
+            onSave = {
+                    productCode,
+                    color,
+                    size,
+                    quantity ->
+
+                viewModel.updateRecords(
+                    records = record.records,
+                    productCode = productCode,
+                    color = color,
+                    size = size,
+                    quantity = quantity
+                )
+
+                recordToEdit = null
+            }
+        )
+    }
+
+    /*
+     * =========================================================
+     * ANA EKRAN
+     * =========================================================
+     */
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(LightBackground)
             .navigationBarsPadding()
     ) {
+
+        /*
+         * =====================================================
+         * ÜST BAŞLIK
+         * =====================================================
+         */
 
         Box(
             modifier = Modifier
@@ -115,6 +246,7 @@ fun DepotListDetailScreen(
                     color = Color.White,
                     fontSize = 38.sp,
                     fontWeight = FontWeight.Light,
+
                     modifier = Modifier
                         .clickable {
                             onBack()
@@ -138,14 +270,22 @@ fun DepotListDetailScreen(
                     Text(
                         text =
                             "${groupedRecords.size} ürün • $totalQuantity adet",
+
                         color = Color.White.copy(
                             alpha = 0.85f
                         ),
+
                         fontSize = 13.sp
                     )
                 }
             }
         }
+
+        /*
+         * =====================================================
+         * LİSTE
+         * =====================================================
+         */
 
         if (groupedRecords.isEmpty()) {
 
@@ -168,21 +308,47 @@ fun DepotListDetailScreen(
                     .fillMaxSize()
                     .padding(
                         horizontal = 16.dp,
-                        vertical = 16.dp
+                        vertical = 10.dp
                     ),
+
                 verticalArrangement =
-                    Arrangement.spacedBy(10.dp)
+                    Arrangement.spacedBy(8.dp)
             ) {
 
                 items(
                     items = groupedRecords,
+
                     key = {
                         "${it.productCode}_${it.color}_${it.size}"
                     }
                 ) { record ->
 
+                    val cardKey =
+                        "${record.productCode}_${record.color}_${record.size}"
+
                     DepotListRecordCard(
-                        record = record
+                        record = record,
+
+                        isSelected =
+                            selectedCardKey == cardKey,
+
+                        onClick = {
+
+                            selectedCardKey =
+                                if (selectedCardKey == cardKey) {
+                                    null
+                                } else {
+                                    cardKey
+                                }
+                        },
+
+                        onEdit = {
+                            recordToEdit = record
+                        },
+
+                        onDelete = {
+                            recordToDelete = record
+                        }
                     )
                 }
             }
@@ -190,26 +356,50 @@ fun DepotListDetailScreen(
     }
 }
 
+/*
+ * =============================================================
+ * ÜRÜN KARTI
+ * =============================================================
+ */
+
 @Composable
 private fun DepotListRecordCard(
-    record: GroupedDepotListRecord
+    record: GroupedDepotListRecord,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            },
+
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
+
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 3.dp
+            defaultElevation = 2.dp
         )
     ) {
 
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
+
+            /*
+             * =================================================
+             * ÜRÜN BİLGİLERİ
+             * =================================================
+             */
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
+
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
@@ -220,20 +410,28 @@ private fun DepotListRecordCard(
 
                     Text(
                         text = record.productCode,
+
                         color = TextDark,
+
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
                     if (record.color.isNotBlank()) {
 
                         Spacer(
-                            modifier = Modifier.height(3.dp)
+                            modifier =
+                                Modifier.height(1.dp)
                         )
 
                         Text(
-                            text = "Renk: ${record.color}",
+                            text =
+                                "Renk: ${record.color}",
+
                             color = Color.Gray,
+
                             fontSize = 13.sp
                         )
                     }
@@ -241,12 +439,19 @@ private fun DepotListRecordCard(
                     if (record.size.isNotBlank()) {
 
                         Text(
-                            text = "Beden: ${record.size}",
+                            text =
+                                "Beden: ${record.size}",
+
                             color = Color.Gray,
+
                             fontSize = 13.sp
                         )
                     }
                 }
+
+                /*
+                 * ADET
+                 */
 
                 Column(
                     horizontalAlignment =
@@ -254,22 +459,298 @@ private fun DepotListRecordCard(
                 ) {
 
                     Text(
-                        text = "${record.quantity}",
+                        text =
+                            "${record.quantity}",
+
                         color = SteelBlue,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+
+                        fontSize = 23.sp,
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
                     Text(
                         text = "adet",
+
                         color = Color.Gray,
-                        fontSize = 12.sp
+
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            /*
+             * =================================================
+             * SADECE KART SEÇİLİNCE BUTONLAR
+             * =================================================
+             */
+
+            if (isSelected) {
+
+                Spacer(
+                    modifier =
+                        Modifier.height(2.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.End,
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    Text(
+                        text = "DÜZENLE",
+
+                        color = SteelBlue,
+
+                        fontSize = 12.sp,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        modifier = Modifier
+                            .clickable {
+                                onEdit()
+                            }
+                            .padding(
+                                horizontal = 7.dp,
+                                vertical = 3.dp
+                            )
+                    )
+
+                    Text(
+                        text = "SİL",
+
+                        color = DarkRed,
+
+                        fontSize = 12.sp,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        modifier = Modifier
+                            .clickable {
+                                onDelete()
+                            }
+                            .padding(
+                                horizontal = 7.dp,
+                                vertical = 3.dp
+                            )
                     )
                 }
             }
         }
     }
 }
+
+/*
+ * =============================================================
+ * DÜZENLEME DİYALOĞU
+ * =============================================================
+ */
+
+@Composable
+private fun EditDepotListRecordDialog(
+    record: GroupedDepotListRecord,
+
+    onDismiss: () -> Unit,
+
+    onSave: (
+        productCode: String,
+        color: String,
+        size: String,
+        quantity: Int
+    ) -> Unit
+) {
+
+    var productCode by remember(record) {
+        mutableStateOf(
+            record.productCode
+        )
+    }
+
+    var color by remember(record) {
+        mutableStateOf(
+            record.color
+        )
+    }
+
+    var size by remember(record) {
+        mutableStateOf(
+            record.size
+        )
+    }
+
+    var quantityText by remember(record) {
+        mutableStateOf(
+            record.quantity.toString()
+        )
+    }
+
+    val quantity =
+        quantityText.toIntOrNull() ?: 0
+
+    val canSave =
+        productCode.isNotBlank() &&
+                quantity > 0
+
+    AlertDialog(
+
+        onDismissRequest = onDismiss,
+
+        title = {
+
+            Text(
+                text = "Ürünü Düzenle",
+
+                fontWeight =
+                    FontWeight.Bold
+            )
+        },
+
+        text = {
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+
+                OutlinedTextField(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    value = productCode,
+
+                    onValueChange = {
+                        productCode = it
+                    },
+
+                    singleLine = true,
+
+                    label = {
+                        Text("Ürün Kodu")
+                    }
+                )
+
+                OutlinedTextField(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    value = color,
+
+                    onValueChange = {
+                        color = it
+                    },
+
+                    singleLine = true,
+
+                    label = {
+                        Text("Renk")
+                    }
+                )
+
+                OutlinedTextField(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    value = size,
+
+                    onValueChange = {
+                        size = it
+                    },
+
+                    singleLine = true,
+
+                    label = {
+                        Text("Beden")
+                    }
+                )
+
+                OutlinedTextField(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    value = quantityText,
+
+                    onValueChange = { value ->
+
+                        quantityText =
+                            value.filter {
+                                it.isDigit()
+                            }
+                    },
+
+                    singleLine = true,
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType =
+                                KeyboardType.Number
+                        ),
+
+                    label = {
+                        Text("Adet")
+                    }
+                )
+            }
+        },
+
+        confirmButton = {
+
+            TextButton(
+                enabled = canSave,
+
+                onClick = {
+
+                    onSave(
+                        productCode.trim(),
+                        color.trim(),
+                        size.trim(),
+                        quantity
+                    )
+                }
+            ) {
+
+                Text(
+                    text = "KAYDET",
+
+                    color =
+                        if (canSave) {
+                            SteelBlue
+                        } else {
+                            Color.Gray
+                        },
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+        },
+
+        dismissButton = {
+
+            TextButton(
+                onClick = onDismiss
+            ) {
+
+                Text(
+                    text = "İPTAL"
+                )
+            }
+        }
+    )
+}
+
+/*
+ * =============================================================
+ * KATEGORİ BAŞLIĞI
+ * =============================================================
+ */
 
 private fun categoryTitle(
     category: DepotListCategory

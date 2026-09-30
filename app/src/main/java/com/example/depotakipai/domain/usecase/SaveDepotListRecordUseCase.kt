@@ -18,4 +18,20 @@ class SaveDepotListRecordUseCase(
     ) {
         repository.insertAll(records)
     }
+
+    suspend fun updateRecords(
+        records: List<DepotListRecord>,
+        productCode: String,
+        color: String,
+        size: String,
+        quantity: Int
+    ) {
+        repository.updateRecords(
+            records = records,
+            productCode = productCode,
+            color = color,
+            size = size,
+            quantity = quantity
+        )
+    }
 }
