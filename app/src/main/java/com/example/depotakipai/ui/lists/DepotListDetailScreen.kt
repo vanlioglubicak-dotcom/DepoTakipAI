@@ -1,6 +1,7 @@
 package com.example.depotakipai.ui.lists
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +34,14 @@ private val SteelBlue = Color(0xFF4682B4)
 private val LightBackground = Color(0xFFF5F5F5)
 private val TextDark = Color(0xFF222222)
 
+private data class GroupedDepotListRecord(
+    val productCode: String,
+    val color: String,
+    val size: String,
+    val quantity: Int,
+    val latestCreatedAt: Long
+)
+
 @Composable
 fun DepotListDetailScreen(
     category: DepotListCategory,
@@ -44,6 +53,38 @@ fun DepotListDetailScreen(
     val categoryRecords = records.filter {
         it.category == category
     }
+
+    val groupedRecords =
+        categoryRecords
+            .groupBy {
+                Triple(
+                    it.productCode,
+                    it.color,
+                    it.size
+                )
+            }
+            .map { (key, groupedItems) ->
+
+                GroupedDepotListRecord(
+                    productCode = key.first,
+                    color = key.second,
+                    size = key.third,
+                    quantity = groupedItems.sumOf {
+                        it.quantity
+                    },
+                    latestCreatedAt = groupedItems.maxOfOrNull {
+                        it.createdAt
+                    } ?: 0L
+                )
+            }
+            .sortedByDescending {
+                it.latestCreatedAt
+            }
+
+    val totalQuantity =
+        groupedRecords.sumOf {
+            it.quantity
+        }
 
     Column(
         modifier = Modifier
@@ -63,19 +104,26 @@ fun DepotListDetailScreen(
                     bottom = 18.dp
                 )
         ) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Text(
                     text = "‹",
                     color = Color.White,
                     fontSize = 38.sp,
                     fontWeight = FontWeight.Light,
-                    modifier = Modifier.padding(end = 10.dp)
+                    modifier = Modifier
+                        .clickable {
+                            onBack()
+                        }
+                        .padding(end = 10.dp)
                 )
 
                 Column {
+
                     Text(
                         text = categoryTitle(category),
                         color = Color.White,
@@ -88,26 +136,24 @@ fun DepotListDetailScreen(
                     )
 
                     Text(
-                        text = "${categoryRecords.size} kayıt",
-                        color = Color.White.copy(alpha = 0.85f),
+                        text =
+                            "${groupedRecords.size} ürün • $totalQuantity adet",
+                        color = Color.White.copy(
+                            alpha = 0.85f
+                        ),
                         fontSize = 13.sp
                     )
                 }
             }
-
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .padding(start = 0.dp)
-            )
         }
 
-        if (categoryRecords.isEmpty()) {
+        if (groupedRecords.isEmpty()) {
 
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
+
                 Text(
                     text = "Bu listede henüz kayıt yok.",
                     color = Color.Gray,
@@ -124,12 +170,15 @@ fun DepotListDetailScreen(
                         horizontal = 16.dp,
                         vertical = 16.dp
                     ),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
 
                 items(
-                    items = categoryRecords,
-                    key = { it.id }
+                    items = groupedRecords,
+                    key = {
+                        "${it.productCode}_${it.color}_${it.size}"
+                    }
                 ) { record ->
 
                     DepotListRecordCard(
@@ -143,7 +192,7 @@ fun DepotListDetailScreen(
 
 @Composable
 private fun DepotListRecordCard(
-    record: DepotListRecord
+    record: GroupedDepotListRecord
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -154,18 +203,21 @@ private fun DepotListRecordCard(
             defaultElevation = 3.dp
         )
     ) {
+
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
+
                     Text(
                         text = record.productCode,
                         color = TextDark,
@@ -174,6 +226,7 @@ private fun DepotListRecordCard(
                     )
 
                     if (record.color.isNotBlank()) {
+
                         Spacer(
                             modifier = Modifier.height(3.dp)
                         )
@@ -186,6 +239,7 @@ private fun DepotListRecordCard(
                     }
 
                     if (record.size.isNotBlank()) {
+
                         Text(
                             text = "Beden: ${record.size}",
                             color = Color.Gray,
@@ -195,8 +249,10 @@ private fun DepotListRecordCard(
                 }
 
                 Column(
-                    horizontalAlignment = Alignment.End
+                    horizontalAlignment =
+                        Alignment.End
                 ) {
+
                     Text(
                         text = "${record.quantity}",
                         color = SteelBlue,
@@ -218,7 +274,9 @@ private fun DepotListRecordCard(
 private fun categoryTitle(
     category: DepotListCategory
 ): String {
+
     return when (category) {
+
         DepotListCategory.YENI_URUNLER ->
             "Yeni Ürünler"
 

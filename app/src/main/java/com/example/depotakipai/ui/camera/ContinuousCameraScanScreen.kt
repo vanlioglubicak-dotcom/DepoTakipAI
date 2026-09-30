@@ -99,15 +99,13 @@ fun ContinuousCameraScanScreen(
         }
     }
 
-    /*
-     * Onaylanmış tarama listesi.
-     */
     var scanBatch by remember {
         mutableStateOf(CameraScanBatch())
     }
 
     /*
-     * Kullanıcıya onaylatılmayı bekleyen ürün.
+     * Ürün kodu barkoddan önce okunursa,
+     * renk ve bedenin sonraki OCR karesinden tamamlanmasını bekler.
      */
     var pendingItem by remember {
         mutableStateOf<CameraScanItem?>(null)
@@ -121,9 +119,6 @@ fun ContinuousCameraScanScreen(
         mutableStateOf(1)
     }
 
-    /*
-     * Son okunan ürün.
-     */
     var lastDetectedValue by remember {
         mutableStateOf<String?>(null)
     }
@@ -140,10 +135,6 @@ fun ContinuousCameraScanScreen(
         mutableStateOf<String?>(null)
     }
 
-    /*
-     * Barkod ve OCR aynı etiket için kısa süre içinde
-     * ayrı sonuç verebilir.
-     */
     var pendingBarcodeText by remember {
         mutableStateOf<String?>(null)
     }
@@ -189,9 +180,6 @@ fun ContinuousCameraScanScreen(
         }
     }
 
-    /*
-     * Okuma başarılı olduğunda ses + titreşim.
-     */
     fun playScanFeedback() {
         try {
             toneGenerator.startTone(
@@ -220,7 +208,7 @@ fun ContinuousCameraScanScreen(
     }
 
     /*
-     * OCR gelmezse barkod tek başına ürün oluşturabilir.
+     * Barkod okunup OCR henüz gelmediyse kısa süre bekle.
      */
     LaunchedEffect(pendingBarcodeTime) {
         val barcodeText = pendingBarcodeText
@@ -246,6 +234,7 @@ fun ContinuousCameraScanScreen(
                 lastTime = lastDetectedTime,
                 requireDetails = false,
                 onAccepted = { item, value, quantity ->
+
                     pendingItem = item
                     pendingProductCode = value
                     pendingQuantity = quantity
@@ -275,11 +264,6 @@ fun ContinuousCameraScanScreen(
             .background(Color.Black)
     ) {
 
-        /*
-         * =========================================================
-         * KAMERA
-         * =========================================================
-         */
         if (hasCameraPermission) {
 
             AndroidView(
@@ -346,9 +330,6 @@ fun ContinuousCameraScanScreen(
                                         imageProxy.imageInfo.rotationDegrees
                                     )
 
-                                /*
-                                 * BARKOD
-                                 */
                                 barcodeScanner
                                     .process(inputImage)
                                     .addOnSuccessListener { barcodes ->
@@ -370,12 +351,8 @@ fun ContinuousCameraScanScreen(
                                         }
                                     }
                                     .addOnFailureListener {
-                                        // Kamera çalışmaya devam eder.
                                     }
 
-                                /*
-                                 * OCR
-                                 */
                                 textRecognizer
                                     .process(inputImage)
                                     .addOnSuccessListener { result ->
@@ -387,21 +364,13 @@ fun ContinuousCameraScanScreen(
                                             return@addOnSuccessListener
                                         }
 
-                                        /*
-                                         * =================================================
-                                         * ÖNEMLİ DÜZELTME
-                                         * =================================================
-                                         *
-                                         * Ürün kodu ilk karede okunmuş olabilir.
-                                         * Ancak RENK/BEDEN ikinci karede okunabilir.
-                                         *
-                                         * Artık pendingItem varsa OCR'ı kesmiyoruz.
-                                         * Yeni kareden gelen renk ve beden mevcut ürüne
-                                         * ekleniyor.
-                                         */
                                         val existingItem =
                                             currentPendingItem
 
+                                        /*
+                                         * Barkod önce, renk/beden sonra geldiyse
+                                         * mevcut geçici ürünü tamamla.
+                                         */
                                         if (existingItem != null) {
 
                                             val normalizedOcr =
@@ -452,10 +421,6 @@ fun ContinuousCameraScanScreen(
                                                     existingItem.size
                                                 }
 
-                                            /*
-                                             * Adet bilgisi de sonradan
-                                             * okunabilsin.
-                                             */
                                             if (
                                                 detectedQuantity > 1
                                             ) {
@@ -463,37 +428,73 @@ fun ContinuousCameraScanScreen(
                                                     detectedQuantity
                                             }
 
+                                            val completedItem =
+                                                existingItem.copy(
+                                                    color = mergedColor,
+                                                    size = mergedSize
+                                                )
+
+                                            pendingItem =
+                                                completedItem
+
                                             /*
-                                             * Renk veya beden bulunduysa
-                                             * mevcut ürünü güncelle.
+                                             * Renk ve beden tamamlandıysa
+                                             * artık ürünü otomatik olarak
+                                             * okunmuş listeye ekle.
                                              */
                                             if (
-                                                mergedColor !=
-                                                existingItem.color ||
-                                                mergedSize !=
-                                                existingItem.size
+                                                mergedColor != "BELİRSİZ" &&
+                                                mergedSize != "BELİRSİZ"
                                             ) {
 
-                                                pendingItem =
-                                                    existingItem.copy(
-                                                        color =
-                                                            mergedColor,
-                                                        size =
-                                                            mergedSize
+                                                val quantity =
+                                                    if (
+                                                        detectedQuantity > 1
+                                                    ) {
+                                                        detectedQuantity
+                                                    } else {
+                                                        pendingQuantity
+                                                    }
+                                                        .coerceAtLeast(1)
+
+                                                val confirmedItems =
+                                                    List(quantity) {
+
+                                                        completedItem.copy(
+                                                            id =
+                                                                UUID
+                                                                    .randomUUID()
+                                                                    .toString(),
+                                                            scannedAt =
+                                                                System
+                                                                    .currentTimeMillis()
+                                                        )
+                                                    }
+
+                                                scanBatch =
+                                                    scanBatch.addItems(
+                                                        confirmedItems
                                                     )
+
+                                                pendingItem = null
+                                                pendingProductCode = null
+                                                pendingQuantity = 1
+
+                                                scanSuccess = true
+
+                                                lastDetectedValue =
+                                                    completedItem.productCode
+
+                                                lastDetectedTime =
+                                                    System.currentTimeMillis()
+
+                                                pendingBarcodeText = null
+                                                pendingBarcodeTime = 0L
                                             }
 
-                                            /*
-                                             * Ürün zaten bulundu.
-                                             * Bu kareyi sadece metadata
-                                             * tamamlamak için kullandık.
-                                             */
                                             return@addOnSuccessListener
                                         }
 
-                                        /*
-                                         * Barkod + OCR birleştirme.
-                                         */
                                         val barcodeText =
                                             pendingBarcodeText
 
@@ -508,21 +509,12 @@ fun ContinuousCameraScanScreen(
                                                     barcodeTime < 1500L
 
                                         val combinedText =
-                                            if (
-                                                barcodeIsRecent
-                                            ) {
+                                            if (barcodeIsRecent) {
                                                 "$barcodeText $detectedText"
                                             } else {
                                                 detectedText
                                             }
 
-                                        /*
-                                         * OCR tarafında artık ürün kodu
-                                         * tek başına kabul edilmiyor.
-                                         *
-                                         * Renk + beden de okunmuşsa
-                                         * doğrudan kabul ediyoruz.
-                                         */
                                         processDetectedText(
                                             rawText = combinedText,
                                             currentBatch = scanBatch,
@@ -536,46 +528,51 @@ fun ContinuousCameraScanScreen(
                                                     value,
                                                     quantity ->
 
-                                                pendingItem =
-                                                    item
+                                                val safeQuantity =
+                                                    quantity.coerceAtLeast(1)
 
-                                                pendingProductCode =
-                                                    value
+                                                val confirmedItems =
+                                                    List(safeQuantity) {
 
-                                                pendingQuantity =
-                                                    quantity
+                                                        item.copy(
+                                                            id =
+                                                                UUID
+                                                                    .randomUUID()
+                                                                    .toString(),
+                                                            scannedAt =
+                                                                System
+                                                                    .currentTimeMillis()
+                                                        )
+                                                    }
+
+                                                scanBatch =
+                                                    scanBatch.addItems(
+                                                        confirmedItems
+                                                    )
+
+                                                pendingItem = null
+                                                pendingProductCode = null
+                                                pendingQuantity = 1
 
                                                 lastDetectedValue =
                                                     value
 
                                                 lastDetectedTime =
-                                                    System.currentTimeMillis()
+                                                    System
+                                                        .currentTimeMillis()
 
-                                                scanSuccess =
-                                                    true
+                                                scanSuccess = true
 
                                                 playScanFeedback()
 
-                                                pendingBarcodeText =
-                                                    null
-
-                                                pendingBarcodeTime =
-                                                    0L
+                                                pendingBarcodeText = null
+                                                pendingBarcodeTime = 0L
                                             },
                                             onRejected = {
-                                                /*
-                                                 * Henüz renk veya beden
-                                                 * okunmamış olabilir.
-                                                 * Bir sonraki OCR karesini bekle.
-                                                 */
                                             }
                                         )
                                     }
                                     .addOnFailureListener {
-                                        /*
-                                         * OCR başarısız olsa bile
-                                         * kamera devam eder.
-                                         */
                                     }
                                     .addOnCompleteListener {
                                         imageProxy.close()
@@ -606,9 +603,6 @@ fun ContinuousCameraScanScreen(
 
         } else {
 
-            /*
-             * KAMERA İZNİ
-             */
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -698,7 +692,7 @@ fun ContinuousCameraScanScreen(
 
         /*
          * =========================================================
-         * OKUNAN ÜRÜN
+         * GEÇİCİ OKUMA BİLGİSİ
          * =========================================================
          */
 
@@ -732,7 +726,7 @@ fun ContinuousCameraScanScreen(
                     ) {
 
                         Text(
-                            text = "ÜRÜN OKUNDU",
+                            text = "ÜRÜN OKUNUYOR",
                             color = BlueSlate,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
@@ -795,173 +789,46 @@ fun ContinuousCameraScanScreen(
 
         /*
          * =========================================================
-         * REDDET / ONAYLA
+         * LİSTEYE GEÇ
          * =========================================================
          */
 
-        if (pendingItem != null) {
+        Button(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 96.dp),
 
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = 96.dp
-                    ),
-                horizontalArrangement =
-                    Arrangement.spacedBy(12.dp)
-            ) {
+            onClick = {
+                onFinished(scanBatch)
+            },
 
-                /*
-                 * REDDET
-                 */
-                Button(
-                    modifier =
-                        Modifier.weight(1f),
-                    onClick = {
+            shape =
+                RoundedCornerShape(12.dp),
 
-                        pendingItem = null
-                        pendingProductCode = null
-                        pendingQuantity = 1
-
-                        scanSuccess = false
-
-                        lastDetectedValue = null
-                        lastDetectedTime = 0L
-
-                        pendingBarcodeText = null
-                        pendingBarcodeTime = 0L
-                    },
-                    shape =
-                        RoundedCornerShape(14.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                FoggyBlue,
-                            contentColor =
-                                StormBlue
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        StormBlue.copy(
+                            alpha = 0.90f
                         )
-                ) {
-
-                    Text(
-                        text = "REDDET",
-                        color = StormBlue,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                /*
-                 * ONAYLA
-                 */
-                Button(
-                    modifier =
-                        Modifier.weight(1f),
-                    onClick = {
-
-                        val confirmedItem =
-                            pendingItem
-                                ?: return@Button
-
-                        val quantity =
-                            pendingQuantity
-                                .coerceAtLeast(1)
-
-                        /*
-                         * ADET kadar fiziksel kayıt oluştur.
-                         */
-                        val confirmedItems =
-                            List(quantity) {
-
-                                confirmedItem.copy(
-                                    id =
-                                        UUID
-                                            .randomUUID()
-                                            .toString(),
-                                    scannedAt =
-                                        System
-                                            .currentTimeMillis()
-                                )
-                            }
-
-                        scanBatch =
-                            scanBatch.addItems(
-                                confirmedItems
-                            )
-
-                        pendingItem = null
-                        pendingProductCode = null
-                        pendingQuantity = 1
-
-                        scanSuccess = false
-
-                        lastDetectedValue = null
-                        lastDetectedTime = 0L
-
-                        pendingBarcodeText = null
-                        pendingBarcodeTime = 0L
-                    },
-                    shape =
-                        RoundedCornerShape(14.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                BlueSlate,
-                            contentColor =
-                                Color.White
-                        )
-                ) {
-
-                    Text(
-                        text = "ONAYLA",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-
-        /*
-         * =========================================================
-         * TARAMAYI BİTİR
-         * =========================================================
-         */
-
-        if (pendingItem == null) {
-
-            Button(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 96.dp),
-                onClick = {
-                    onFinished(scanBatch)
-                },
-                shape =
-                    RoundedCornerShape(12.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            StormBlue.copy(
-                                alpha = 0.90f
-                            )
-                    )
-            ) {
-
-                Text(
-                    text = "TARAMAYI BİTİR",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
                 )
-            }
+        ) {
+
+            Text(
+                text = "LİSTE",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         /*
-         * GERİ
+         * =========================================================
+         * GERİ / ÇIKIŞ
+         * =========================================================
          */
+
         Button(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -970,9 +837,12 @@ fun ContinuousCameraScanScreen(
                     start = 16.dp,
                     top = 58.dp
                 ),
+
             onClick = onBack,
+
             shape =
                 RoundedCornerShape(12.dp),
+
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor =
@@ -990,23 +860,31 @@ fun ContinuousCameraScanScreen(
         }
 
         /*
+         * =========================================================
          * HATA
+         * =========================================================
          */
+
         errorText?.let { message ->
 
             Text(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 155.dp),
+
                 text = message,
+
                 color = Color.White,
                 fontSize = 13.sp
             )
         }
 
         /*
-         * OKUNANLAR LİSTESİ
+         * =========================================================
+         * OKUNANLAR
+         * =========================================================
          */
+
         if (showReadList) {
 
             ReadProductListOverlay(
@@ -1236,7 +1114,9 @@ private fun ReadProductListOverlay(
                                     bottom = 10.dp
                                 )
                                 .background(
-                                    FoggyBlue.copy(alpha = 0.18f),
+                                    FoggyBlue.copy(
+                                        alpha = 0.18f
+                                    ),
                                     RoundedCornerShape(
                                         10.dp
                                     )
@@ -1334,10 +1214,6 @@ private fun processDetectedText(
     val now =
         System.currentTimeMillis()
 
-    /*
-     * Aynı etiketi kısa sürede tekrar
-     * kabul etme.
-     */
     if (
         lastValue == productCode &&
         now - lastTime < 1500L
@@ -1360,12 +1236,6 @@ private fun processDetectedText(
             normalizedText
         )
 
-    /*
-     * OCR tarafında ürün kodu tek başına
-     * yeterli değil.
-     *
-     * Renk + beden gelmesini bekle.
-     */
     if (
         requireDetails &&
         (
@@ -1377,11 +1247,6 @@ private fun processDetectedText(
         return
     }
 
-    /*
-     * SNZ-2926
-     *
-     * 00002926
-     */
     val numericPart =
         number
             .takeLast(8)
@@ -1389,6 +1254,18 @@ private fun processDetectedText(
                 8,
                 '0'
             )
+
+    val alreadyExists =
+        currentBatch.items.any {
+            it.productCode == productCode &&
+                    it.color == color &&
+                    it.size == size &&
+                    now - it.scannedAt < 1500L
+        }
+
+    if (alreadyExists) {
+        return
+    }
 
     val item =
         CameraScanItem(

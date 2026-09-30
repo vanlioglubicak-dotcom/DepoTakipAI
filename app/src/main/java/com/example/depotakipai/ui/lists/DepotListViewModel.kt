@@ -2,6 +2,7 @@ package com.example.depotakipai.ui.lists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.depotakipai.data.repository.DepotListRecordRepository
 import com.example.depotakipai.domain.model.DepotListCategory
 import com.example.depotakipai.domain.model.DepotListRecord
 import com.example.depotakipai.domain.usecase.GetDepotListRecordsUseCase
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class DepotListViewModel(
     private val getDepotListRecordsUseCase: GetDepotListRecordsUseCase,
-    private val saveDepotListRecordUseCase: SaveDepotListRecordUseCase
+    private val saveDepotListRecordUseCase: SaveDepotListRecordUseCase,
+    private val repository: DepotListRecordRepository
 ) : ViewModel() {
 
     private val _records =
@@ -76,6 +78,32 @@ class DepotListViewModel(
             if (records.isNotEmpty()) {
                 saveDepotListRecordUseCase(records)
             }
+        }
+    }
+
+    fun deleteRecord(
+        record: DepotListRecord
+    ) {
+        viewModelScope.launch {
+            repository.delete(record)
+        }
+    }
+
+    fun deleteRecords(
+        records: List<DepotListRecord>
+    ) {
+        viewModelScope.launch {
+            records.forEach { record ->
+                repository.delete(record)
+            }
+        }
+    }
+
+    fun deleteRecordById(
+        id: String
+    ) {
+        viewModelScope.launch {
+            repository.deleteById(id)
         }
     }
 }

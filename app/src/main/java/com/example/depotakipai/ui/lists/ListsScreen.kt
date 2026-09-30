@@ -12,17 +12,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.depotakipai.data.local.DatabaseProvider
+import com.example.depotakipai.data.repository.DepotListRecordRepository
+import com.example.depotakipai.domain.model.DepotListCategory
 
 private val DarkRed = Color(0xFF8B0000)
 private val SteelBlue = Color(0xFF4682B4)
@@ -43,17 +51,45 @@ fun ListsScreen(
     onBack: () -> Unit,
     onCategoryClick: (ListCategory) -> Unit
 ) {
+    val context = LocalContext.current
+
+    val repository = remember(context) {
+        DepotListRecordRepository(
+            DatabaseProvider
+                .getDatabase(context)
+                .depotListRecordDao()
+        )
+    }
+
+    val records by repository
+        .observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+
+    val yeniUrunlerCount = records
+        .filter { it.category == DepotListCategory.YENI_URUNLER }
+        .sumOf { it.quantity }
+
+    val gidenCount = records
+        .filter { it.category == DepotListCategory.GIDEN }
+        .sumOf { it.quantity }
+
+    val gelenIadeCount = records
+        .filter { it.category == DepotListCategory.GELEN_IADE }
+        .sumOf { it.quantity }
+
+    val gidenIadeCount = records
+        .filter { it.category == DepotListCategory.GIDEN_IADE }
+        .sumOf { it.quantity }
+
+    val okunanlarCount = records
+        .filter { it.category == DepotListCategory.OKUNANLAR }
+        .sumOf { it.quantity }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(LightBackground)
     ) {
-
-        // =========================================================
-        // BAŞLIK
-        // =========================================================
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -65,12 +101,10 @@ fun ListsScreen(
                     bottom = 18.dp
                 )
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Text(
                     text = "‹",
                     color = Color.White,
@@ -86,7 +120,6 @@ fun ListsScreen(
                 Column(
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
-
                     Text(
                         text = "LİSTELER",
                         color = Color.White,
@@ -107,10 +140,6 @@ fun ListsScreen(
             }
         }
 
-        // =========================================================
-        // LİSTELER
-        // =========================================================
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,109 +147,75 @@ fun ListsScreen(
                     horizontal = 16.dp,
                     vertical = 18.dp
                 ),
-
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // -----------------------------------------------------
-            // YENİ ÜRÜNLER
-            // -----------------------------------------------------
-
             ListCategoryCard(
                 title = "Yeni Ürünler",
                 description = "Yeni gelen ürünler",
+                count = yeniUrunlerCount,
                 icon = "↓",
                 color = SteelBlue,
                 onClick = {
-                    onCategoryClick(
-                        ListCategory.YENI_GELEN
-                    )
+                    onCategoryClick(ListCategory.YENI_GELEN)
                 }
             )
-
-            // -----------------------------------------------------
-            // GİDEN
-            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Giden",
                 description = "Depodan çıkan ürünler",
+                count = gidenCount,
                 icon = "↑",
                 color = Gray,
                 onClick = {
-                    onCategoryClick(
-                        ListCategory.GIDEN
-                    )
+                    onCategoryClick(ListCategory.GIDEN)
                 }
             )
-
-            // -----------------------------------------------------
-            // GELEN İADE
-            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Gelen İade",
                 description = "Depoya gelen iadeler",
+                count = gelenIadeCount,
                 icon = "↙",
                 color = SteelBlue,
                 onClick = {
-                    onCategoryClick(
-                        ListCategory.GELEN_IADE
-                    )
+                    onCategoryClick(ListCategory.GELEN_IADE)
                 }
             )
-
-            // -----------------------------------------------------
-            // GİDEN İADE
-            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Giden İade",
                 description = "Depodan gönderilen iadeler",
+                count = gidenIadeCount,
                 icon = "↗",
                 color = DarkRed,
                 onClick = {
-                    onCategoryClick(
-                        ListCategory.GIDEN_IADE
-                    )
+                    onCategoryClick(ListCategory.GIDEN_IADE)
                 }
             )
-
-            // -----------------------------------------------------
-            // OKUNANLAR
-            //
-            // Mevcut ANA_LISTE enum değeri şimdilik korunuyor.
-            // Daha sonra kamera onay kayıtlarını buraya bağlayacağız.
-            // -----------------------------------------------------
 
             ListCategoryCard(
                 title = "Okunanlar",
                 description = "Kamera ile onaylanan ürün listeleri",
+                count = okunanlarCount,
                 icon = "▤",
                 color = DarkRed,
                 onClick = {
-                    onCategoryClick(
-                        ListCategory.ANA_LISTE
-                    )
+                    onCategoryClick(ListCategory.ANA_LISTE)
                 }
             )
         }
     }
 }
 
-// =====================================================================
-// LİSTE KARTI
-// =====================================================================
-
 @Composable
 private fun ListCategoryCard(
     title: String,
     description: String,
+    count: Int,
     icon: String,
     color: Color,
     onClick: () -> Unit
 ) {
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -228,18 +223,14 @@ private fun ListCategoryCard(
             .clickable {
                 onClick()
             },
-
         shape = RoundedCornerShape(16.dp),
-
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-
         elevation = CardDefaults.cardElevation(
             defaultElevation = 3.dp
         )
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -247,27 +238,17 @@ private fun ListCategoryCard(
                     horizontal = 18.dp,
                     vertical = 12.dp
                 ),
-
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            // =====================================================
-            // İKON
-            // =====================================================
-
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .background(
-                        color = color.copy(
-                            alpha = 0.12f
-                        ),
+                        color = color.copy(alpha = 0.12f),
                         shape = RoundedCornerShape(14.dp)
                     ),
-
                 contentAlignment = Alignment.Center
             ) {
-
                 Text(
                     text = icon,
                     color = color,
@@ -276,16 +257,11 @@ private fun ListCategoryCard(
                 )
             }
 
-            // =====================================================
-            // YAZI
-            // =====================================================
-
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 16.dp)
             ) {
-
                 Text(
                     text = title,
                     color = TextDark,
@@ -300,13 +276,36 @@ private fun ListCategoryCard(
                 Text(
                     text = description,
                     color = Color(0xFF777777),
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    maxLines = 1
                 )
             }
 
-            // =====================================================
-            // SAĞ OK
-            // =====================================================
+            Spacer(
+                modifier = Modifier.width(12.dp)
+            )
+
+            Column(
+                modifier = Modifier.width(48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "$count",
+                    color = color,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "adet",
+                    color = Color(0xFF888888),
+                    fontSize = 10.sp
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.width(6.dp)
+            )
 
             Text(
                 text = "›",
