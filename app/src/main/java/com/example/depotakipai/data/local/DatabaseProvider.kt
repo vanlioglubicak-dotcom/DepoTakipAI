@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.depotakipai.data.local.migration.MIGRATION_6_7
 import com.example.depotakipai.data.local.migration.MIGRATION_7_8
+import com.example.depotakipai.data.local.migration.MIGRATION_8_9
 
 object DatabaseProvider {
 
@@ -28,7 +29,8 @@ object DatabaseProvider {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
                 )
                 .build()
                 .also {

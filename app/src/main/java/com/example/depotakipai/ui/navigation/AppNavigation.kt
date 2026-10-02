@@ -24,6 +24,7 @@ import com.example.depotakipai.domain.model.WarehouseRow
 import com.example.depotakipai.domain.usecase.GetDepotListRecordsUseCase
 import com.example.depotakipai.domain.usecase.SaveDepotListRecordUseCase
 import com.example.depotakipai.ui.camera.ContinuousCameraScanScreen
+import com.example.depotakipai.ui.catalog.CatalogScreen
 import com.example.depotakipai.ui.components.BottomNavigationBar
 import com.example.depotakipai.ui.components.BottomNavigationItemType
 import com.example.depotakipai.ui.components.QuickActionMenu
@@ -46,6 +47,7 @@ private enum class AppScreen {
     HOME,
     PRODUCTS,
     ADD_PRODUCT,
+    CATALOG,
     CAMERA,
     PENDING_SCAN_LIST,
     RETURNS,
@@ -170,6 +172,9 @@ fun AppNavigation() {
                 AppScreen.ADD_PRODUCT ->
                     AppScreen.PRODUCTS
 
+                AppScreen.CATALOG ->
+                    AppScreen.HOME
+
                 AppScreen.CAMERA -> {
                     when (cameraFlow) {
 
@@ -281,6 +286,7 @@ fun AppNavigation() {
                     },
 
                     onIncomingReturnClick = {
+
                         quickActionVisible = false
 
                         cameraBatch =
@@ -294,6 +300,7 @@ fun AppNavigation() {
                     },
 
                     onOutgoingReturnClick = {
+
                         quickActionVisible = false
 
                         cameraBatch =
@@ -304,6 +311,14 @@ fun AppNavigation() {
 
                         currentScreen =
                             AppScreen.CAMERA
+                    },
+
+                    onCatalogClick = {
+
+                        quickActionVisible = false
+
+                        currentScreen =
+                            AppScreen.CATALOG
                     }
                 )
             }
@@ -339,6 +354,7 @@ fun AppNavigation() {
                 AddProductScreen(
 
                     onProductSaved = {
+
                         cameraBatch =
                             CameraScanBatch()
 
@@ -350,6 +366,7 @@ fun AppNavigation() {
                     },
 
                     onBack = {
+
                         cameraBatch =
                             CameraScanBatch()
 
@@ -376,6 +393,24 @@ fun AppNavigation() {
                 )
             }
 
+            AppScreen.CATALOG -> {
+
+                CatalogScreen(
+
+                    onBack = {
+                        currentScreen =
+                            AppScreen.HOME
+                    },
+
+                    onAddCatalogItem = {
+                        // Katalog ürün ekleme ekranı
+                        // sonraki aşamada bağlanacak.
+                    },
+
+                    items = emptyList()
+                )
+            }
+
             AppScreen.CAMERA -> {
 
                 ContinuousCameraScanScreen(
@@ -399,7 +434,8 @@ fun AppNavigation() {
 
                     onFinished = { batch ->
 
-                        cameraBatch = batch
+                        cameraBatch =
+                            batch
 
                         if (
                             cameraFlow ==
@@ -443,7 +479,8 @@ fun AppNavigation() {
 
                     title = title,
 
-                    initialBatch = cameraBatch,
+                    initialBatch =
+                        cameraBatch,
 
                     onBack = {
 
@@ -484,18 +521,6 @@ fun AppNavigation() {
                                     CameraFlow.NONE ->
                                         DepotListCategory.OKUNANLAR
                                 }
-
-                            /*
-                             * =====================================================
-                             * ONAYLANAN ÜRÜNLER TEK KEZ KAYDEDİLİR
-                             *
-                             * Önceki yapıda ürünler OKUNANLAR'a kaydedilip
-                             * ardından hedef listeye ikinci kez kaydediliyordu.
-                             *
-                             * Artık her ürün yalnızca seçilen hedef kategoriye
-                             * kaydediliyor.
-                             * =====================================================
-                             */
 
                             val records =
                                 confirmedBatch.items.map { item ->
@@ -852,7 +877,8 @@ fun AppNavigation() {
 
                     DepotListDetailScreen(
 
-                        category = category,
+                        category =
+                            category,
 
                         viewModel =
                             depotListViewModel,
@@ -928,6 +954,12 @@ fun AppNavigation() {
 
                         currentScreen =
                             AppScreen.CAMERA
+                    },
+
+                    onCatalogClick = {
+
+                        currentScreen =
+                            AppScreen.CATALOG
                     }
                 )
             }
@@ -1024,39 +1056,58 @@ fun AppNavigation() {
                         AppScreen.WAREHOUSE_RACK,
                         AppScreen.WAREHOUSE_LOCATION,
                         AppScreen.LISTS,
-                        AppScreen.LIST_DETAIL ->
+                        AppScreen.LIST_DETAIL,
+                        AppScreen.CATALOG ->
                             BottomNavigationItemType.HOME
                     },
 
                 onHomeClick = {
+
                     quickActionVisible = false
+
                     currentScreen =
                         AppScreen.HOME
                 },
 
                 onProductsClick = {
+
                     quickActionVisible = false
+
                     currentScreen =
                         AppScreen.PRODUCTS
                 },
 
                 onQuickActionClick = {
-                    if (currentScreen == AppScreen.PRODUCTS) {
+
+                    if (
+                        currentScreen ==
+                        AppScreen.PRODUCTS
+                    ) {
+
                         quickActionVisible = false
-                        currentScreen = AppScreen.ADD_PRODUCT
+
+                        currentScreen =
+                            AppScreen.ADD_PRODUCT
+
                     } else {
-                        quickActionVisible = !quickActionVisible
+
+                        quickActionVisible =
+                            !quickActionVisible
                     }
                 },
 
                 onReturnsClick = {
+
                     quickActionVisible = false
+
                     currentScreen =
                         AppScreen.RETURNS
                 },
 
                 onSettingsClick = {
+
                     quickActionVisible = false
+
                     currentScreen =
                         AppScreen.SETTINGS
                 }
