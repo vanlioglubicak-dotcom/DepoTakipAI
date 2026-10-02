@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -37,6 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val BlueSlate = Color(0xFF557392)
+private val Background = Color(0xFFF6F7F9)
+private val DarkText = Color(0xFF263238)
+private val SecondaryText = Color(0xFF78909C)
 
 data class CatalogPreviewItem(
     val productNumber: String,
@@ -83,77 +87,116 @@ fun CatalogScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF6F7F9))
+            .background(Background)
     ) {
 
+        // ÜST BAŞLIK
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
+                .statusBarsPadding()
                 .padding(
-                    start = 8.dp,
-                    end = 16.dp,
-                    top = 12.dp,
-                    bottom = 12.dp
+                    start = 6.dp,
+                    end = 10.dp,
+                    top = 6.dp,
+                    bottom = 10.dp
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            // AYRI GERİ BUTONU
             IconButton(
-                onClick = onBack
+                onClick = onBack,
+                modifier = Modifier.size(42.dp)
             ) {
                 Text(
                     text = "‹",
                     fontSize = 36.sp,
-                    color = Color(0xFF37474F)
+                    fontWeight = FontWeight.Normal,
+                    color = Color(0xFF455A64)
                 )
             }
 
-            Column(
-                modifier = Modifier.weight(1f)
+            Spacer(
+                modifier = Modifier.width(6.dp)
+            )
+
+            // KATALOG — SADECE BAŞLIK/BUTON GÖRÜNÜMÜ
+            // Geri işlevi YOK.
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = BlueSlate,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 10.dp
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "KATALOG",
-                    fontSize = 21.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF263238)
-                )
-
-                Text(
-                    text = "Ürün modelleri",
-                    fontSize = 13.sp,
-                    color = Color.Gray
+                    color = Color.White
                 )
             }
 
+            Spacer(
+                modifier = Modifier.weight(1f)
+            )
+
+            // EKLE BUTONU
             Button(
                 onClick = onAddCatalogItem,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BlueSlate
+                    containerColor = BlueSlate,
+                    contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(
-                    horizontal = 12.dp,
+                    horizontal = 10.dp,
                     vertical = 8.dp
                 )
             ) {
                 Text(
                     text = "+",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
 
                 Spacer(
-                    modifier = Modifier.width(4.dp)
+                    modifier = Modifier.width(5.dp)
                 )
 
                 Text(
                     text = "EKLE",
-                    fontWeight = FontWeight.Bold
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         }
 
+        // ALT BAŞLIK
+        Text(
+            text = "Ürün modelleri",
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(
+                    start = 104.dp,
+                    end = 16.dp,
+                    bottom = 14.dp
+                ),
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
+
+        // ARAMA
         OutlinedTextField(
             value = searchText,
             onValueChange = {
@@ -165,7 +208,7 @@ fun CatalogScreen(
                     horizontal = 16.dp,
                     vertical = 12.dp
                 ),
-            singleLine = true,
+            singleLine = false,
             leadingIcon = {
                 Text(
                     text = "⌕",
@@ -178,9 +221,10 @@ fun CatalogScreen(
                     text = "Model no, firma, renk veya beden ara..."
                 )
             },
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(18.dp)
         )
 
+        // LİSTE BAŞLIĞI
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,9 +254,10 @@ fun CatalogScreen(
         }
 
         Spacer(
-            modifier = Modifier.height(6.dp)
+            modifier = Modifier.height(4.dp)
         )
 
+        // KATALOG BOŞ
         if (filteredItems.isEmpty()) {
 
             EmptyCatalogState(
@@ -232,12 +277,14 @@ fun CatalogScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+
                 items(
                     items = filteredItems,
                     key = {
                         "${it.company}-${it.productNumber}"
                     }
                 ) { item ->
+
                     CatalogProductCard(
                         item = item
                     )
@@ -278,7 +325,7 @@ private fun CatalogProductCard(
 
                 Text(
                     text = "ÜRÜN GÖRSELİ",
-                    color = Color(0xFF78909C),
+                    color = SecondaryText,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -294,7 +341,7 @@ private fun CatalogProductCard(
                     text = "${item.company}-${item.productNumber}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF263238)
+                    color = DarkText
                 )
 
                 Spacer(
@@ -302,6 +349,7 @@ private fun CatalogProductCard(
                 )
 
                 if (item.color.isNotBlank()) {
+
                     Text(
                         text = "Renk: ${item.color}",
                         fontSize = 13.sp,
@@ -310,6 +358,7 @@ private fun CatalogProductCard(
                 }
 
                 if (item.size.isNotBlank()) {
+
                     Text(
                         text = "Beden: ${item.size}",
                         fontSize = 13.sp,
@@ -351,28 +400,33 @@ private fun EmptyCatalogState(
         )
 
         Spacer(
-            modifier = Modifier.height(20.dp)
+            modifier = Modifier.height(18.dp)
         )
 
         Button(
             onClick = onAddCatalogItem,
             colors = ButtonDefaults.buttonColors(
-                containerColor = BlueSlate
+                containerColor = BlueSlate,
+                contentColor = Color.White
             ),
             shape = RoundedCornerShape(10.dp)
         ) {
+
             Text(
                 text = "+",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
 
             Spacer(
-                modifier = Modifier.width(6.dp)
+                modifier = Modifier.width(4.dp)
             )
 
             Text(
-                text = "KATALOG ÜRÜNÜ EKLE"
+                text = "KATALOG ÜRÜNÜ EKLE",
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
     }

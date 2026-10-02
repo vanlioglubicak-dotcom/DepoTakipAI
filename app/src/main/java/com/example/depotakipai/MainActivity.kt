@@ -1,4 +1,4 @@
-package com.example.depotakipai
+package com.example.depotakipai.ui.navigation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
