@@ -1041,8 +1041,12 @@ fun AppNavigation() {
                 },
 
                 onQuickActionClick = {
-                    quickActionVisible =
-                        !quickActionVisible
+                    if (currentScreen == AppScreen.PRODUCTS) {
+                        quickActionVisible = false
+                        currentScreen = AppScreen.ADD_PRODUCT
+                    } else {
+                        quickActionVisible = !quickActionVisible
+                    }
                 },
 
                 onReturnsClick = {

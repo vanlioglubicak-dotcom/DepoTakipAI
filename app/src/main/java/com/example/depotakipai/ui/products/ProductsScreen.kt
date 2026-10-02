@@ -152,7 +152,9 @@ fun ProductsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
 
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
 
                         Text(
                             text = "ÜRÜNLER",
@@ -172,19 +174,60 @@ fun ProductsScreen(
                         )
                     }
 
-                    Button(
-                        onClick = onBack,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Gray
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
-                        Text(
-                            text = "Geri",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        // =================================================
+                        // ÜRÜN EKLE
+                        // =================================================
+
+                        Button(
+                            onClick = onAddProduct,
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 0.dp
+                            ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DarkRed
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+
+                            Text(
+                                text = "+ EKLE",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        // =================================================
+                        // GERİ
+                        // =================================================
+
+                        Button(
+                            onClick = onBack,
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 10.dp,
+                                vertical = 0.dp
+                            ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Gray
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+
+                            Text(
+                                text = "Geri",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -346,7 +389,7 @@ fun ProductsScreen(
                             Text(
                                 text =
                                     if (products.isEmpty()) {
-                                        "Ürün eklemek için aşağıdaki + butonunu kullanın."
+                                        "Ürün eklemek için yukarıdaki + EKLE butonunu kullanın."
                                     } else {
                                         "Farklı bir ürün kodu, renk veya beden deneyin."
                                     },
