@@ -1,7 +1,11 @@
 package com.example.depotakipai.ui.catalog
 
+import android.content.ContentValues
+import android.provider.MediaStore
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,12 +17,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -31,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +44,7 @@ import androidx.compose.ui.unit.sp
 private val BlueSlate = Color(0xFF557392)
 private val Background = Color(0xFFF6F7F9)
 private val DarkText = Color(0xFF263238)
+private val CameraRed = Color(0xFF9E0000)
 
 @Composable
 fun CatalogAddScreen(
@@ -50,6 +57,10 @@ fun CatalogAddScreen(
         imagePath: String?
     ) -> Unit = { _, _, _, _, _ -> }
 ) {
+
+    val context = LocalContext.current
+
+    val scrollState = rememberScrollState()
 
     var productNumber by remember {
         mutableStateOf("")
@@ -71,18 +82,100 @@ fun CatalogAddScreen(
         mutableStateOf<String?>(null)
     }
 
+    var cameraUri by remember {
+        mutableStateOf<android.net.Uri?>(null)
+    }
+
     var errorMessage by remember {
         mutableStateOf("")
     }
 
-    val scrollState = rememberScrollState()
+
+    // ---------------------------------------------------------
+    // GALERİ
+    // ---------------------------------------------------------
 
     val imagePicker =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.GetContent()
         ) { uri ->
-            imagePath = uri?.toString()
+
+            if (uri != null) {
+
+                imagePath =
+                    uri.toString()
+
+                errorMessage = ""
+            }
         }
+
+
+    // ---------------------------------------------------------
+    // NORMAL FOTOĞRAF KAMERASI
+    //
+    // BURASI BARKOD KAMERASI DEĞİLDİR.
+    // Android'in normal fotoğraf kamerasını açar.
+    // ---------------------------------------------------------
+
+    val cameraLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture()
+        ) { success ->
+
+            if (
+                success &&
+                cameraUri != null
+            ) {
+
+                imagePath =
+                    cameraUri.toString()
+
+                errorMessage = ""
+
+            } else {
+
+                cameraUri = null
+            }
+        }
+
+
+    fun openNormalCamera() {
+
+        val values =
+            ContentValues().apply {
+
+                put(
+                    MediaStore.Images.Media.DISPLAY_NAME,
+                    "katalog_${System.currentTimeMillis()}.jpg"
+                )
+
+                put(
+                    MediaStore.Images.Media.MIME_TYPE,
+                    "image/jpeg"
+                )
+            }
+
+
+        val uri =
+            context.contentResolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                values
+            )
+
+
+        if (uri != null) {
+
+            cameraUri = uri
+
+            cameraLauncher.launch(uri)
+
+        } else {
+
+            errorMessage =
+                "Kamera fotoğrafı için kayıt alanı oluşturulamadı."
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -90,42 +183,53 @@ fun CatalogAddScreen(
             .background(Background)
     ) {
 
+
+        // =====================================================
         // ÜST BAŞLIK
+        // =====================================================
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
                 .padding(
-                    start = 8.dp,
+                    start = 4.dp,
                     end = 16.dp,
-                    top = 16.dp,
-                    bottom = 14.dp
+                    top = 10.dp,
+                    bottom = 10.dp
                 ),
-            verticalAlignment = Alignment.CenterVertically
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(48.dp)
                     .clickable {
                         onBack()
                     },
-                contentAlignment = Alignment.Center
+
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Text(
                     text = "‹",
-                    fontSize = 42.sp,
+                    fontSize = 40.sp,
                     color = Color(0xFF455A64)
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.width(8.dp)
+                modifier = Modifier.width(4.dp)
             )
 
+
             Column(
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             ) {
 
                 Text(
@@ -133,10 +237,6 @@ fun CatalogAddScreen(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkText
-                )
-
-                Spacer(
-                    modifier = Modifier.height(2.dp)
                 )
 
                 Text(
@@ -147,55 +247,86 @@ fun CatalogAddScreen(
             }
         }
 
-        // KAYDIRILABİLİR FORM ALANI
+
+        // =====================================================
+        // KAYDIRILABİLİR İÇERİK
+        // =====================================================
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                .navigationBarsPadding()
                 .padding(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = 110.dp
+                    bottom = 120.dp
                 )
         ) {
 
+
+            // =================================================
+            // ÜRÜN BİLGİLERİ
+            // =================================================
+
             Text(
                 text = "ÜRÜN BİLGİLERİ",
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF455A64)
             )
+
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+
+            // =================================================
+            // ÜRÜN NUMARASI
+            // =================================================
+
+            OutlinedTextField(
+                value = productNumber,
+
+                onValueChange = { value ->
+
+                    productNumber =
+                        value.filter {
+                            it.isDigit()
+                        }
+
+                    errorMessage = ""
+                },
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                singleLine = true,
+
+                label = {
+                    Text("Ürün numarası")
+                },
+
+                placeholder = {
+                    Text("Örn: 01")
+                },
+
+                shape =
+                    RoundedCornerShape(12.dp)
+            )
+
 
             Spacer(
                 modifier = Modifier.height(12.dp)
             )
 
-            // ÜRÜN NUMARASI
-            OutlinedTextField(
-                value = productNumber,
-                onValueChange = {
-                    productNumber = it.filter { character ->
-                        character.isDigit()
-                    }
-                    errorMessage = ""
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = {
-                    Text("Ürün numarası")
-                },
-                placeholder = {
-                    Text("Örn: 01")
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
+            // =================================================
             // FİRMA
+            // =================================================
+
             Text(
                 text = "FİRMA",
                 fontSize = 13.sp,
@@ -203,83 +334,138 @@ fun CatalogAddScreen(
                 color = Color(0xFF546E7A)
             )
 
+
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier = Modifier.height(6.dp)
             )
 
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
 
                 CompanyButton(
                     text = "SNZ",
-                    selected = selectedCompany == "SNZ",
+
+                    selected =
+                        selectedCompany == "SNZ",
+
                     onClick = {
-                        selectedCompany = "SNZ"
+
+                        selectedCompany =
+                            "SNZ"
+
                         errorMessage = ""
                     },
-                    modifier = Modifier.weight(1f)
+
+                    modifier =
+                        Modifier.weight(1f)
                 )
+
 
                 CompanyButton(
                     text = "MTS",
-                    selected = selectedCompany == "MTS",
+
+                    selected =
+                        selectedCompany == "MTS",
+
                     onClick = {
-                        selectedCompany = "MTS"
+
+                        selectedCompany =
+                            "MTS"
+
                         errorMessage = ""
                     },
-                    modifier = Modifier.weight(1f)
+
+                    modifier =
+                        Modifier.weight(1f)
                 )
             }
+
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+
+            // =================================================
+            // RENK
+            // =================================================
+
+            OutlinedTextField(
+                value = color,
+
+                onValueChange = {
+                    color = it
+                    errorMessage = ""
+                },
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                singleLine = true,
+
+                label = {
+                    Text("Renk")
+                },
+
+                placeholder = {
+                    Text("Örn: Siyah")
+                },
+
+                shape =
+                    RoundedCornerShape(12.dp)
+            )
+
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+
+            // =================================================
+            // BEDEN
+            // =================================================
+
+            OutlinedTextField(
+                value = size,
+
+                onValueChange = {
+                    size = it
+                    errorMessage = ""
+                },
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                singleLine = true,
+
+                label = {
+                    Text("Beden")
+                },
+
+                placeholder = {
+                    Text("Örn: S, M, L, XL")
+                },
+
+                shape =
+                    RoundedCornerShape(12.dp)
+            )
+
 
             Spacer(
                 modifier = Modifier.height(16.dp)
             )
 
-            // RENK
-            OutlinedTextField(
-                value = color,
-                onValueChange = {
-                    color = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = {
-                    Text("Renk")
-                },
-                placeholder = {
-                    Text("Örn: Siyah")
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
 
-            Spacer(
-                modifier = Modifier.height(14.dp)
-            )
+            // =================================================
+            // ÜRÜN GÖRSELİ
+            // =================================================
 
-            // BEDEN
-            OutlinedTextField(
-                value = size,
-                onValueChange = {
-                    size = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = {
-                    Text("Beden")
-                },
-                placeholder = {
-                    Text("Örn: S, M, L, XL")
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(
-                modifier = Modifier.height(18.dp)
-            )
-
-            // GÖRSEL
             Text(
                 text = "ÜRÜN GÖRSELİ",
                 fontSize = 13.sp,
@@ -287,95 +473,237 @@ fun CatalogAddScreen(
                 color = Color(0xFF546E7A)
             )
 
+
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier = Modifier.height(7.dp)
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFB0BEC5),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-                    .background(
-                        color = Color.White,
-                        shape = RoundedCornerShape(14.dp)
-                    )
-                    .clickable {
-                        imagePicker.launch("image/*")
-                    },
-                contentAlignment = Alignment.Center
+
+            // =================================================
+            // GALERİ + NORMAL KAMERA
+            // ADDPRODUCTSCREEN TARZI KOMPAKT BUTONLAR
+            // =================================================
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+
+                // -------------------------------------------------
+                // GALERİ
+                // -------------------------------------------------
+
+                Button(
+                    onClick = {
+
+                        imagePicker.launch(
+                            "image/*"
+                        )
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(54.dp),
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                BlueSlate,
+
+                            contentColor =
+                                Color.White
+                        ),
+
+                    shape =
+                        RoundedCornerShape(12.dp)
                 ) {
 
                     Text(
-                        text = if (imagePath == null) {
-                            "＋"
-                        } else {
-                            "✓"
-                        },
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BlueSlate
+                        text = "▣  GALERİDEN EKLE",
+                        fontSize = 13.sp,
+                        fontWeight =
+                            FontWeight.Bold
                     )
+                }
 
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
+
+                // -------------------------------------------------
+                // NORMAL KAMERA
+                // -------------------------------------------------
+
+                Button(
+                    onClick = {
+
+                        openNormalCamera()
+                    },
+
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(54.dp),
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                CameraRed,
+
+                            contentColor =
+                                Color.White
+                        ),
+
+                    shape =
+                        RoundedCornerShape(12.dp)
+                ) {
 
                     Text(
-                        text = if (imagePath == null) {
-                            "Galeriden görsel seç"
-                        } else {
-                            "Görsel seçildi"
-                        },
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF546E7A)
+                        text = "▣  KAMERADAN EKLE",
+                        fontSize = 13.sp,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
             }
 
-            if (errorMessage.isNotBlank()) {
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+
+            // =================================================
+            // GÖRSEL DURUM ALANI
+            // =================================================
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFFB0BEC5),
+                        shape =
+                            RoundedCornerShape(12.dp)
+                    )
+                    .background(
+                        color = Color.White,
+                        shape =
+                            RoundedCornerShape(12.dp)
+                    ),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Column(
+                    horizontalAlignment =
+                        Alignment.CenterHorizontally
+                ) {
+
+                    Text(
+                        text =
+                            if (
+                                imagePath == null
+                            ) {
+                                "+"
+                            } else {
+                                "✓"
+                            },
+
+                        fontSize = 30.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color =
+                            if (
+                                imagePath == null
+                            ) {
+                                BlueSlate
+                            } else {
+                                Color(0xFF2E7D32)
+                            }
+                    )
+
+
+                    Text(
+                        text =
+                            if (
+                                imagePath == null
+                            ) {
+                                "Ürün görseli seçilmedi"
+                            } else {
+                                "Ürün görseli hazır"
+                            },
+
+                        fontSize = 14.sp,
+                        fontWeight =
+                            FontWeight.Medium,
+
+                        color =
+                            Color(0xFF546E7A)
+                    )
+                }
+            }
+
+
+            // =================================================
+            // HATA
+            // =================================================
+
+            if (
+                errorMessage.isNotBlank()
+            ) {
 
                 Spacer(
-                    modifier = Modifier.height(10.dp)
+                    modifier =
+                        Modifier.height(8.dp)
                 )
 
                 Text(
                     text = errorMessage,
                     fontSize = 13.sp,
                     color = Color(0xFFB00020),
-                    fontWeight = FontWeight.Medium
+                    fontWeight =
+                        FontWeight.Medium
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.height(24.dp)
+                modifier =
+                    Modifier.height(18.dp)
             )
 
+
+            // =================================================
             // KAYDET
+            // =================================================
+
             Button(
                 onClick = {
 
                     when {
+
                         productNumber.isBlank() -> {
+
                             errorMessage =
                                 "Ürün numarasını girin."
                         }
 
+
                         selectedCompany.isBlank() -> {
+
                             errorMessage =
                                 "SNZ veya MTS seçin."
                         }
 
+
                         else -> {
+
                             errorMessage = ""
 
                             onSave(
@@ -388,28 +716,46 @@ fun CatalogAddScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BlueSlate,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp)
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor =
+                            BlueSlate,
+
+                        contentColor =
+                            Color.White
+                    ),
+
+                shape =
+                    RoundedCornerShape(12.dp)
             ) {
 
                 Text(
                     text = "KAYDET",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontSize = 15.sp,
+                    fontWeight =
+                        FontWeight.Bold
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.height(24.dp)
+                modifier =
+                    Modifier.height(20.dp)
             )
         }
     }
 }
+
+
+// =============================================================
+// SNZ / MTS BUTONU
+// =============================================================
 
 @Composable
 private fun CompanyButton(
@@ -421,28 +767,37 @@ private fun CompanyButton(
 
     Button(
         onClick = onClick,
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor =
-                if (selected) {
-                    BlueSlate
-                } else {
-                    Color.White
-                },
-            contentColor =
-                if (selected) {
-                    Color.White
-                } else {
-                    BlueSlate
-                }
-        ),
-        shape = RoundedCornerShape(12.dp)
+
+        modifier =
+            modifier.height(50.dp),
+
+        colors =
+            ButtonDefaults.buttonColors(
+
+                containerColor =
+                    if (selected) {
+                        BlueSlate
+                    } else {
+                        Color.White
+                    },
+
+                contentColor =
+                    if (selected) {
+                        Color.White
+                    } else {
+                        BlueSlate
+                    }
+            ),
+
+        shape =
+            RoundedCornerShape(12.dp)
     ) {
 
         Text(
             text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 15.sp,
+            fontWeight =
+                FontWeight.Bold
         )
     }
 }
