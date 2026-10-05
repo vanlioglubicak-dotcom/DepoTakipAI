@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import com.example.depotakipai.data.catalog.CatalogAssetImporter
+import com.example.depotakipai.data.catalog.CatalogRepository
 import com.example.depotakipai.data.local.DatabaseProvider
 import com.example.depotakipai.data.repository.DepotListRecordRepository
 
@@ -138,10 +141,37 @@ fun AppNavigation() {
     }
 
 
+    // =========================================================
+    // DATABASE
+    // =========================================================
+
     val database = remember {
         DatabaseProvider.getDatabase(context)
     }
 
+
+    // =========================================================
+    // KATALOG PDF / ASSET IMPORT
+    // =========================================================
+
+    LaunchedEffect(database) {
+
+        val catalogRepository = CatalogRepository(
+            catalogItemDao = database.catalogItemDao()
+        )
+
+        val catalogAssetImporter = CatalogAssetImporter(
+            context = context,
+            repository = catalogRepository
+        )
+
+        catalogAssetImporter.importIfEmpty()
+    }
+
+
+    // =========================================================
+    // DEPOT LIST REPOSITORY
+    // =========================================================
 
     val depotListRepository = remember(database) {
 
@@ -193,6 +223,10 @@ fun AppNavigation() {
         )
 
 
+    // =========================================================
+    // BACK
+    // =========================================================
+
     BackHandler(
 
         enabled =
@@ -214,18 +248,14 @@ fun AppNavigation() {
                     AppScreen.HOME ->
                         AppScreen.HOME
 
-
                     AppScreen.PRODUCTS ->
                         AppScreen.HOME
-
 
                     AppScreen.CATALOG ->
                         AppScreen.HOME
 
-
                     AppScreen.CATALOG_ADD ->
                         AppScreen.CATALOG
-
 
                     AppScreen.CAMERA -> {
 
@@ -237,56 +267,43 @@ fun AppNavigation() {
 
                                 AppScreen.PENDING_SCAN_LIST
 
-
                             CameraFlow.NONE ->
                                 AppScreen.HOME
                         }
                     }
 
-
                     AppScreen.PENDING_SCAN_LIST ->
                         AppScreen.HOME
-
 
                     AppScreen.RETURNS ->
                         AppScreen.HOME
 
-
                     AppScreen.INCOMING_RETURN ->
                         AppScreen.RETURNS
-
 
                     AppScreen.OUTGOING_RETURN ->
                         AppScreen.RETURNS
 
-
                     AppScreen.INCOMING_RETURN_REVIEW ->
                         AppScreen.INCOMING_RETURN
-
 
                     AppScreen.WAREHOUSE ->
                         AppScreen.HOME
 
-
                     AppScreen.WAREHOUSE_ROW ->
                         AppScreen.WAREHOUSE
-
 
                     AppScreen.WAREHOUSE_RACK ->
                         AppScreen.WAREHOUSE_ROW
 
-
                     AppScreen.WAREHOUSE_LOCATION ->
                         AppScreen.WAREHOUSE_RACK
-
 
                     AppScreen.LISTS ->
                         AppScreen.HOME
 
-
                     AppScreen.LIST_DETAIL ->
                         AppScreen.LISTS
-
 
                     AppScreen.SETTINGS ->
                         AppScreen.HOME
@@ -319,7 +336,6 @@ fun AppNavigation() {
                             AppScreen.PRODUCTS
                     },
 
-
                     onAddProductClick = {
 
                         quickActionVisible = false
@@ -334,7 +350,6 @@ fun AppNavigation() {
                             AppScreen.CAMERA
                     },
 
-
                     onReturnsClick = {
 
                         quickActionVisible = false
@@ -342,7 +357,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.RETURNS
                     },
-
 
                     onSettingsClick = {
 
@@ -352,7 +366,6 @@ fun AppNavigation() {
                             AppScreen.SETTINGS
                     },
 
-
                     onWarehouseClick = {
 
                         quickActionVisible = false
@@ -361,7 +374,6 @@ fun AppNavigation() {
                             AppScreen.WAREHOUSE
                     },
 
-
                     onListsClick = {
 
                         quickActionVisible = false
@@ -369,7 +381,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.LISTS
                     },
-
 
                     onIncomingReturnClick = {
 
@@ -385,7 +396,6 @@ fun AppNavigation() {
                             AppScreen.CAMERA
                     },
 
-
                     onOutgoingReturnClick = {
 
                         quickActionVisible = false
@@ -399,7 +409,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.CAMERA
                     },
-
 
                     onCatalogClick = {
 
@@ -428,21 +437,10 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onAddProduct = {
-
-                        /*
-                         * ÖNEMLİ:
-                         *
-                         * Eski AddProductScreen artık açılmıyor.
-                         *
-                         * Ürünler ekranındaki + yalnızca
-                         * hızlı işlem menüsünü açar.
-                         */
 
                         quickActionVisible = true
                     },
-
 
                     onReturnsClick = {
 
@@ -451,7 +449,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.RETURNS
                     },
-
 
                     onSettingsClick = {
 
@@ -480,23 +477,13 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onAddCatalogItem = {
-
-                        /*
-                         * KATALOG + BASILDIĞINDA:
-                         *
-                         * Eski barkod kamera açılmaz.
-                         *
-                         * Doğrudan katalog ürün bilgi ekranı açılır.
-                         */
 
                         quickActionVisible = false
 
                         currentScreen =
                             AppScreen.CATALOG_ADD
                     },
-
 
                     items = emptyList()
                 )
@@ -516,7 +503,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.CATALOG
                     },
-
 
                     onSave = { _, _, _, _, _ ->
 
@@ -547,12 +533,10 @@ fun AppNavigation() {
 
                                     AppScreen.PENDING_SCAN_LIST
 
-
                                 CameraFlow.NONE ->
                                     AppScreen.HOME
                             }
                     },
-
 
                     onFinished = { batch ->
 
@@ -579,14 +563,11 @@ fun AppNavigation() {
                         CameraFlow.NEW_PRODUCT ->
                             "YENİ ÜRÜNLER"
 
-
                         CameraFlow.INCOMING_RETURN ->
                             "GELEN İADE"
 
-
                         CameraFlow.OUTGOING_RETURN ->
                             "GİDEN İADE"
-
 
                         CameraFlow.NONE ->
                             "OKUNANLAR"
@@ -600,7 +581,6 @@ fun AppNavigation() {
                     initialBatch =
                         cameraBatch,
 
-
                     onBack = {
 
                         cameraBatch =
@@ -613,12 +593,10 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onConfirm = { confirmedBatch ->
 
                         cameraBatch =
                             confirmedBatch
-
 
                         if (
                             confirmedBatch.items.isNotEmpty()
@@ -631,14 +609,11 @@ fun AppNavigation() {
                                     CameraFlow.NEW_PRODUCT ->
                                         DepotListCategory.YENI_URUNLER
 
-
                                     CameraFlow.INCOMING_RETURN ->
                                         DepotListCategory.GELEN_IADE
 
-
                                     CameraFlow.OUTGOING_RETURN ->
                                         DepotListCategory.GIDEN_IADE
-
 
                                     CameraFlow.NONE ->
                                         DepotListCategory.OKUNANLAR
@@ -695,8 +670,8 @@ fun AppNavigation() {
                                 CameraFlow.NEW_PRODUCT,
                                 CameraFlow.INCOMING_RETURN,
                                 CameraFlow.OUTGOING_RETURN ->
-                                    AppScreen.LISTS
 
+                                    AppScreen.LISTS
 
                                 CameraFlow.NONE ->
                                     AppScreen.LISTS
@@ -720,7 +695,6 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onIncomingReturnClick = {
 
                         cameraBatch =
@@ -732,7 +706,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.CAMERA
                     },
-
 
                     onOutgoingReturnClick = {
 
@@ -760,7 +733,6 @@ fun AppNavigation() {
                     database =
                         database,
 
-
                     onBack = {
 
                         currentScreen =
@@ -787,7 +759,6 @@ fun AppNavigation() {
                         database =
                             database,
 
-
                         onBack = {
 
                             currentScreen =
@@ -805,16 +776,13 @@ fun AppNavigation() {
                         result =
                             result,
 
-
                         onBack = {
 
                             currentScreen =
                                 AppScreen.INCOMING_RETURN
                         },
 
-
                         onEdit = {},
-
 
                         onConfirmSuccess = {
 
@@ -840,7 +808,6 @@ fun AppNavigation() {
                     database =
                         database,
 
-
                     onBack = {
 
                         currentScreen =
@@ -864,13 +831,11 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onListsClick = {
 
                         currentScreen =
                             AppScreen.LISTS
                     },
-
 
                     onProductsClick = {
 
@@ -878,12 +843,9 @@ fun AppNavigation() {
                             AppScreen.PRODUCTS
                     },
 
-
                     onLocationClick = {},
 
-
                     onStockClick = {},
-
 
                     onRowClick = { row ->
 
@@ -900,9 +862,7 @@ fun AppNavigation() {
                             AppScreen.WAREHOUSE_ROW
                     },
 
-
                     onAddRowClick = {},
-
 
                     onSearchClick = {}
                 )
@@ -923,13 +883,11 @@ fun AppNavigation() {
                                 rowNumber = 1
                             ),
 
-
                     onBack = {
 
                         currentScreen =
                             AppScreen.WAREHOUSE
                     },
-
 
                     onRackClick = { rack ->
 
@@ -942,7 +900,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.WAREHOUSE_RACK
                     },
-
 
                     onAddRackClick = {}
                 )
@@ -971,13 +928,11 @@ fun AppNavigation() {
                         rack =
                             rack,
 
-
                         onBack = {
 
                             currentScreen =
                                 AppScreen.WAREHOUSE_ROW
                         },
-
 
                         onLocationClick = { location ->
 
@@ -987,7 +942,6 @@ fun AppNavigation() {
                             currentScreen =
                                 AppScreen.WAREHOUSE_LOCATION
                         },
-
 
                         onAddLocationClick = {}
                     )
@@ -1017,16 +971,13 @@ fun AppNavigation() {
                         location =
                             location,
 
-
                         onBack = {
 
                             currentScreen =
                                 AppScreen.WAREHOUSE_RACK
                         },
 
-
                         onProductClick = {},
-
 
                         onEditClick = {}
                     )
@@ -1048,7 +999,6 @@ fun AppNavigation() {
                             AppScreen.HOME
                     },
 
-
                     onCategoryClick = { category ->
 
                         selectedListCategory =
@@ -1058,18 +1008,14 @@ fun AppNavigation() {
                                 ListCategory.ANA_LISTE ->
                                     DepotListCategory.OKUNANLAR
 
-
                                 ListCategory.YENI_GELEN ->
                                     DepotListCategory.YENI_URUNLER
-
 
                                 ListCategory.GIDEN ->
                                     DepotListCategory.GIDEN
 
-
                                 ListCategory.GIDEN_IADE ->
                                     DepotListCategory.GIDEN_IADE
-
 
                                 ListCategory.GELEN_IADE ->
                                     DepotListCategory.GELEN_IADE
@@ -1108,7 +1054,6 @@ fun AppNavigation() {
                         viewModel =
                             depotListViewModel,
 
-
                         onBack = {
 
                             currentScreen =
@@ -1133,7 +1078,6 @@ fun AppNavigation() {
                             AppScreen.PRODUCTS
                     },
 
-
                     onAddProductClick = {
 
                         cameraBatch =
@@ -1146,13 +1090,11 @@ fun AppNavigation() {
                             AppScreen.CAMERA
                     },
 
-
                     onReturnsClick = {
 
                         currentScreen =
                             AppScreen.RETURNS
                     },
-
 
                     onSettingsClick = {
 
@@ -1160,20 +1102,17 @@ fun AppNavigation() {
                             AppScreen.SETTINGS
                     },
 
-
                     onWarehouseClick = {
 
                         currentScreen =
                             AppScreen.WAREHOUSE
                     },
 
-
                     onListsClick = {
 
                         currentScreen =
                             AppScreen.LISTS
                     },
-
 
                     onIncomingReturnClick = {
 
@@ -1187,7 +1126,6 @@ fun AppNavigation() {
                             AppScreen.CAMERA
                     },
 
-
                     onOutgoingReturnClick = {
 
                         cameraBatch =
@@ -1199,7 +1137,6 @@ fun AppNavigation() {
                         currentScreen =
                             AppScreen.CAMERA
                     },
-
 
                     onCatalogClick = {
 
@@ -1222,10 +1159,8 @@ fun AppNavigation() {
                     Alignment.BottomCenter
                 ),
 
-
             visible =
                 quickActionVisible,
-
 
             onNewProductClick = {
 
@@ -1241,7 +1176,6 @@ fun AppNavigation() {
                     AppScreen.CAMERA
             },
 
-
             onIncomingReturnClick = {
 
                 quickActionVisible = false
@@ -1255,7 +1189,6 @@ fun AppNavigation() {
                 currentScreen =
                     AppScreen.CAMERA
             },
-
 
             onOutgoingReturnClick = {
 
@@ -1289,7 +1222,6 @@ fun AppNavigation() {
                         Alignment.BottomCenter
                     ),
 
-
                 selectedItem =
 
                     when (currentScreen) {
@@ -1297,10 +1229,8 @@ fun AppNavigation() {
                         AppScreen.HOME ->
                             BottomNavigationItemType.HOME
 
-
                         AppScreen.PRODUCTS ->
                             BottomNavigationItemType.PRODUCTS
-
 
                         AppScreen.RETURNS,
                         AppScreen.INCOMING_RETURN,
@@ -1308,10 +1238,8 @@ fun AppNavigation() {
                         AppScreen.OUTGOING_RETURN ->
                             BottomNavigationItemType.RETURNS
 
-
                         AppScreen.SETTINGS ->
                             BottomNavigationItemType.SETTINGS
-
 
                         AppScreen.WAREHOUSE,
                         AppScreen.WAREHOUSE_ROW,
@@ -1323,12 +1251,10 @@ fun AppNavigation() {
                         AppScreen.CATALOG_ADD ->
                             BottomNavigationItemType.HOME
 
-
                         AppScreen.CAMERA,
                         AppScreen.PENDING_SCAN_LIST ->
                             BottomNavigationItemType.PRODUCTS
                     },
-
 
                 onHomeClick = {
 
@@ -1339,7 +1265,6 @@ fun AppNavigation() {
                         AppScreen.HOME
                 },
 
-
                 onProductsClick = {
 
                     quickActionVisible =
@@ -1349,26 +1274,20 @@ fun AppNavigation() {
                         AppScreen.PRODUCTS
                 },
 
-
                 onQuickActionClick = {
 
                     when (currentScreen) {
 
-                        /*
-                         * ÜRÜNLER +:
-                         * Yalnızca hızlı işlem menüsü.
-                         */
+                        // ÜRÜNLER +:
+                        // Hızlı işlem menüsü.
                         AppScreen.PRODUCTS -> {
 
                             quickActionVisible =
                                 !quickActionVisible
                         }
 
-
-                        /*
-                         * KATALOG +:
-                         * Doğrudan katalog ürün bilgi ekranı.
-                         */
+                        // KATALOG +:
+                        // Katalog ürün bilgi ekranı.
                         AppScreen.CATALOG -> {
 
                             quickActionVisible =
@@ -1378,11 +1297,8 @@ fun AppNavigation() {
                                 AppScreen.CATALOG_ADD
                         }
 
-
-                        /*
-                         * Diğer ekranlar:
-                         * Mevcut hızlı işlem menüsü.
-                         */
+                        // Diğer ekranlar:
+                        // Mevcut hızlı işlem menüsü.
                         else -> {
 
                             quickActionVisible =
@@ -1390,7 +1306,6 @@ fun AppNavigation() {
                         }
                     }
                 },
-
 
                 onReturnsClick = {
 
@@ -1400,7 +1315,6 @@ fun AppNavigation() {
                     currentScreen =
                         AppScreen.RETURNS
                 },
-
 
                 onSettingsClick = {
 
