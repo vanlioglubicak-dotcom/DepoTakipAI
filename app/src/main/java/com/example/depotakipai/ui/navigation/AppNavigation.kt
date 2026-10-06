@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import com.example.depotakipai.domain.usecase.SaveDepotListRecordUseCase
 import com.example.depotakipai.ui.camera.ContinuousCameraScanScreen
 
 import com.example.depotakipai.ui.catalog.CatalogAddScreen
+import com.example.depotakipai.ui.catalog.CatalogPreviewItem
 import com.example.depotakipai.ui.catalog.CatalogScreen
 
 import com.example.depotakipai.ui.components.BottomNavigationBar
@@ -151,22 +153,81 @@ fun AppNavigation() {
 
 
     // =========================================================
-    // KATALOG PDF / ASSET IMPORT
+    // KATALOG REPOSITORY
+    // =========================================================
+
+    val catalogRepository = remember(database) {
+
+        CatalogRepository(
+            catalogItemDao =
+                database.catalogItemDao()
+        )
+    }
+
+
+    // =========================================================
+    // PDF KATALOG ASSET -> ROOM AKTARIMI
     // =========================================================
 
     LaunchedEffect(database) {
 
-        val catalogRepository = CatalogRepository(
-            catalogItemDao = database.catalogItemDao()
-        )
-
-        val catalogAssetImporter = CatalogAssetImporter(
-            context = context,
-            repository = catalogRepository
-        )
+        val catalogAssetImporter =
+            CatalogAssetImporter(
+                context = context,
+                repository = catalogRepository
+            )
 
         catalogAssetImporter.importIfEmpty()
     }
+
+
+    // =========================================================
+    // ROOM'DAKİ KATALOG VERİLERİ
+    // =========================================================
+
+    val catalogItemsFlow = remember(database) {
+
+        catalogRepository.getAll()
+    }
+
+
+    val catalogItems by catalogItemsFlow
+        .collectAsState(initial = emptyList())
+
+
+    // =========================================================
+    // CATALOG SCREEN İÇİN GÖRÜNÜM MODELİ
+    //
+    // Aynı model birden fazla renk/beden satırına sahipse
+    // katalog ana ekranında tek model olarak gösterilir.
+    // =========================================================
+
+    val catalogPreviewItems =
+        remember(catalogItems) {
+
+            catalogItems
+                .map { item ->
+
+                    CatalogPreviewItem(
+
+                        productNumber =
+                            item.productNumber,
+
+                        company =
+                            item.company,
+
+                        color =
+                            item.color,
+
+                        size =
+                            item.size
+                    )
+                }
+                .distinctBy {
+
+                    "${it.company}-${it.productNumber}"
+                }
+        }
 
 
     // =========================================================
@@ -185,7 +246,8 @@ fun AppNavigation() {
         remember(depotListRepository) {
 
             GetDepotListRecordsUseCase(
-                repository = depotListRepository
+                repository =
+                    depotListRepository
             )
         }
 
@@ -194,7 +256,8 @@ fun AppNavigation() {
         remember(depotListRepository) {
 
             SaveDepotListRecordUseCase(
-                repository = depotListRepository
+                repository =
+                    depotListRepository
             )
         }
 
@@ -485,7 +548,10 @@ fun AppNavigation() {
                             AppScreen.CATALOG_ADD
                     },
 
-                    items = emptyList()
+                    // ARTIK BOŞ LİSTE DEĞİL.
+                    // Room'dan gelen gerçek katalog verisi.
+                    items =
+                        catalogPreviewItems
                 )
             }
 
@@ -504,7 +570,12 @@ fun AppNavigation() {
                             AppScreen.CATALOG
                     },
 
-                    onSave = { _, _, _, _, _ ->
+                    onSave = {
+                            _,
+                            _,
+                            _,
+                            _,
+                            _ ->
 
                         currentScreen =
                             AppScreen.CATALOG
@@ -1278,16 +1349,14 @@ fun AppNavigation() {
 
                     when (currentScreen) {
 
-                        // ÜRÜNLER +:
-                        // Hızlı işlem menüsü.
+                        // ÜRÜNLER +
                         AppScreen.PRODUCTS -> {
 
                             quickActionVisible =
                                 !quickActionVisible
                         }
 
-                        // KATALOG +:
-                        // Katalog ürün bilgi ekranı.
+                        // KATALOG +
                         AppScreen.CATALOG -> {
 
                             quickActionVisible =
@@ -1297,8 +1366,7 @@ fun AppNavigation() {
                                 AppScreen.CATALOG_ADD
                         }
 
-                        // Diğer ekranlar:
-                        // Mevcut hızlı işlem menüsü.
+                        // Diğer ekranlar
                         else -> {
 
                             quickActionVisible =

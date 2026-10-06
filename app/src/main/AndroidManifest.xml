@@ -11,7 +11,7 @@
         android:theme="@style/Theme.DepoTakipAI">
 
         <activity
-            android:name="com.depotakipai.MainActivity"
+            android:name="com.example.depotakipai.ui.navigation.MainActivity"
             android:exported="true">
 
             <intent-filter>
