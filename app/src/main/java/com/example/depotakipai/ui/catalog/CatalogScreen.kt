@@ -8,8 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,14 +24,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,23 +41,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 
-import coil.compose.AsyncImage
-
-import com.example.depotakipai.data.catalog.CatalogColorCatalog
-import com.example.depotakipai.data.catalog.CatalogColorOption
 import com.example.depotakipai.data.catalog.CatalogRepository
 import com.example.depotakipai.data.local.DatabaseProvider
 import com.example.depotakipai.data.local.entity.CatalogItemEntity
 
+import com.example.depotakipai.ui.catalog.components.CatalogModelCard
+import com.example.depotakipai.ui.catalog.components.CatalogModelCardItem
+import com.example.depotakipai.ui.catalog.components.CatalogSearchBar
+import com.example.depotakipai.ui.catalog.dialog.CatalogCameraCandidate
+import com.example.depotakipai.ui.catalog.dialog.CatalogCameraResultDialog
+import com.example.depotakipai.ui.catalog.dialog.CatalogColorEditDialog
+import com.example.depotakipai.ui.catalog.dialog.CatalogModelDetailDialog
+import com.example.depotakipai.ui.catalog.model.CatalogModelGroup
+
 import kotlinx.coroutines.launch
+
+import java.util.UUID
 
 
 private val CatalogBackground =
@@ -78,21 +76,16 @@ private val SoftText =
     Color(0xFF607D8B)
 
 
+/**
+ * AppNavigation tarafından kullanılan katalog özet modeli.
+ *
+ * Bu model stok yapısına dokunmaz.
+ */
 data class CatalogPreviewItem(
     val productNumber: String,
     val company: String,
     val color: String,
     val size: String
-)
-
-
-private data class CatalogModelGroup(
-    val modelNumber: String,
-    val displayModel: String,
-    val imagePath: String,
-    val colors: List<String>,
-    val sizes: List<String>,
-    val items: List<CatalogItemEntity>
 )
 
 
@@ -103,17 +96,17 @@ fun CatalogScreen(
     items: List<CatalogPreviewItem> = emptyList()
 ) {
 
-    val context =
-        LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val database =
         remember {
-            DatabaseProvider.getDatabase(context)
+            DatabaseProvider.getDatabase(
+                context
+            )
         }
 
     val repository =
         remember(database) {
-
             CatalogRepository(
                 catalogItemDao =
                     database.catalogItemDao()
@@ -131,28 +124,53 @@ fun CatalogScreen(
         rememberCoroutineScope()
 
 
-    var searchText by remember {
+    // ============================================================
+    // ARAMA
+    // ============================================================
+
+    var searchText by
+    remember {
         mutableStateOf("")
     }
 
-    var selectedModel by remember {
+
+    // ============================================================
+    // SEÇİLİ MODEL
+    // ============================================================
+
+    var selectedModel by
+    remember {
         mutableStateOf<CatalogModelGroup?>(null)
     }
 
-    var capturedImageUri by remember {
-        mutableStateOf<Uri?>(null)
+
+    // ============================================================
+    // SEÇİLİ RENK / BEDEN
+    // ============================================================
+
+    var selectedColor by
+    remember {
+        mutableStateOf("")
     }
 
-    var showCameraResult by remember {
+    var selectedSize by
+    remember {
+        mutableStateOf("")
+    }
+
+
+    // ============================================================
+    // RENK DÜZENLEME
+    // ============================================================
+
+    var colorDialogVisible by
+    remember {
         mutableStateOf(false)
     }
 
-    var cameraUri by remember {
-        mutableStateOf<Uri?>(null)
-    }
-
-    var colorToEdit by remember {
-        mutableStateOf<String?>(null)
+    var colorDialogInitialValue by
+    remember {
+        mutableStateOf("")
     }
 
 
@@ -160,31 +178,32 @@ fun CatalogScreen(
     // KAMERA
     // ============================================================
 
+    var cameraUri by
+    remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var cameraResultVisible by
+    remember {
+        mutableStateOf(false)
+    }
+
+
     val cameraLauncher =
         rememberLauncherForActivityResult(
             contract =
                 ActivityResultContracts.TakePicture()
         ) { success ->
 
-            if (
-                success &&
-                cameraUri != null
-            ) {
-
-                capturedImageUri =
-                    cameraUri
-
-                showCameraResult =
-                    true
-
+            if (success && cameraUri != null) {
+                cameraResultVisible = true
             } else {
-
                 cameraUri = null
             }
         }
 
 
-    fun openCatalogSearchCamera() {
+    fun openCatalogCamera() {
 
         val values =
             ContentValues().apply {
@@ -217,31 +236,49 @@ fun CatalogScreen(
 
     // ============================================================
     // MODEL GRUPLARI
+    //
+    // MEY2607
+    // EY2607
+    // SNZ-2607
+    //
+    // hepsi:
+    //
+    // SNZ-2607
     // ============================================================
 
     val modelGroups =
         remember(catalogItems) {
 
             catalogItems
+                .groupBy { item ->
 
-                .groupBy {
                     normalizeModelNumber(
-                        it.productNumber
+                        item.productNumber
                     )
                 }
+                .mapNotNull { entry ->
 
-                .mapNotNull { (modelNumber, modelItems) ->
+                    val modelNumber =
+                        entry.key
+
+                    val modelItems =
+                        entry.value
 
                     if (
-                        modelNumber.isBlank()
+                        modelNumber.isBlank() ||
+                        modelItems.isEmpty()
                     ) {
-
                         null
-
                     } else {
 
+                        val firstImage =
+                            modelItems.firstOrNull {
+                                it.imagePath.isNotBlank()
+                            }
+
                         val first =
-                            modelItems.first()
+                            firstImage
+                                ?: modelItems.first()
 
                         CatalogModelGroup(
 
@@ -252,12 +289,7 @@ fun CatalogScreen(
                                 "SNZ-$modelNumber",
 
                             imagePath =
-                                modelItems
-                                    .firstOrNull {
-                                        it.imagePath.isNotBlank()
-                                    }
-                                    ?.imagePath
-                                    ?: first.imagePath,
+                                first.imagePath,
 
                             colors =
                                 modelItems
@@ -267,11 +299,7 @@ fun CatalogScreen(
                                     .filter {
                                         it.isNotBlank()
                                     }
-                                    .distinctBy {
-                                        CatalogColorCatalog.normalize(
-                                            it
-                                        )
-                                    }
+                                    .distinct()
                                     .sorted(),
 
                             sizes =
@@ -290,9 +318,7 @@ fun CatalogScreen(
                         )
                     }
                 }
-
                 .sortedWith(
-
                     compareBy<CatalogModelGroup> {
 
                         it.modelNumber
@@ -308,7 +334,7 @@ fun CatalogScreen(
 
 
     // ============================================================
-    // ARAMA
+    // FİLTRE
     // ============================================================
 
     val filteredModels =
@@ -317,66 +343,63 @@ fun CatalogScreen(
             modelGroups
         ) {
 
-            val rawQuery =
+            val query =
                 searchText.trim()
 
-            val normalizedQuery =
-                normalizeSearchQuery(
-                    rawQuery
-                )
-
-            if (
-                rawQuery.isBlank()
-            ) {
+            if (query.isBlank()) {
 
                 modelGroups
 
             } else {
 
+                val normalizedQuery =
+                    normalizeSearchQuery(
+                        query
+                    )
+
                 modelGroups.filter { model ->
 
-                    val modelMatches =
-                        normalizedQuery.isNotBlank() &&
-                                model.modelNumber.contains(
-                                    normalizedQuery,
-                                    ignoreCase = true
-                                )
-
-                    val displayMatches =
-                        model.displayModel.contains(
-                            rawQuery,
+                    val modelMatch =
+                        model.modelNumber.contains(
+                            normalizedQuery,
                             ignoreCase = true
                         )
 
-                    val colorMatches =
-                        model.colors.any {
+                    val displayMatch =
+                        model.displayModel.contains(
+                            query,
+                            ignoreCase = true
+                        )
 
-                            it.contains(
-                                rawQuery,
+                    val colorMatch =
+                        model.colors.any { color ->
+
+                            color.contains(
+                                query,
                                 ignoreCase = true
                             )
                         }
 
-                    val sizeMatches =
-                        model.sizes.any {
+                    val sizeMatch =
+                        model.sizes.any { size ->
 
-                            it.contains(
-                                rawQuery,
+                            size.contains(
+                                query,
                                 ignoreCase = true
                             )
                         }
 
-                    modelMatches ||
-                            displayMatches ||
-                            colorMatches ||
-                            sizeMatches
+                    modelMatch ||
+                            displayMatch ||
+                            colorMatch ||
+                            sizeMatch
                 }
             }
         }
 
 
     // ============================================================
-    // ANA KATALOG
+    // ANA EKRAN
     // ============================================================
 
     Column(
@@ -388,10 +411,9 @@ fun CatalogScreen(
                 )
     ) {
 
-
-        // ========================================================
+        // --------------------------------------------------------
         // BAŞLIK
-        // ========================================================
+        // --------------------------------------------------------
 
         Row(
             modifier =
@@ -401,10 +423,10 @@ fun CatalogScreen(
                         Color.White
                     )
                     .padding(
-                        start = 8.dp,
+                        start = 6.dp,
                         end = 12.dp,
-                        top = 18.dp,
-                        bottom = 14.dp
+                        top = 16.dp,
+                        bottom = 12.dp
                     ),
 
             verticalAlignment =
@@ -423,7 +445,6 @@ fun CatalogScreen(
                 )
             }
 
-
             Column(
                 modifier =
                     Modifier.weight(1f)
@@ -434,8 +455,7 @@ fun CatalogScreen(
                     fontSize = 23.sp,
                     fontWeight =
                         FontWeight.Bold,
-                    color =
-                        DarkText
+                    color = DarkText
                 )
 
                 Spacer(
@@ -445,109 +465,56 @@ fun CatalogScreen(
 
                 Text(
                     text = "Ürün modelleri",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                    fontSize = 13.sp,
+                    color = SoftText
                 )
             }
-        }
 
-
-        // ========================================================
-        // ARAMA + KAMERA
-        // ========================================================
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 14.dp,
-                        bottom = 8.dp
-                    ),
-
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            OutlinedTextField(
-
-                value =
-                    searchText,
-
-                onValueChange = {
-                    searchText = it
-                },
-
-                modifier =
-                    Modifier.weight(1f),
-
-                singleLine = true,
-
-                leadingIcon = {
-
-                    Text(
-                        text = "⌕",
-                        fontSize = 27.sp,
-                        color =
-                            BlueSlate
-                    )
-                },
-
-                placeholder = {
-
-                    Text(
-                        text =
-                            "Model no, renk veya beden ara..."
-                    )
-                },
+            OutlinedButton(
+                onClick =
+                    onAddCatalogItem,
 
                 shape =
                     RoundedCornerShape(
-                        14.dp
+                        10.dp
                     )
-            )
-
-
-            Spacer(
-                modifier =
-                    Modifier.width(8.dp)
-            )
-
-
-            Box(
-
-                modifier =
-                    Modifier
-                        .size(58.dp)
-                        .background(
-                            BlueSlate,
-                            RoundedCornerShape(
-                                14.dp
-                            )
-                        )
-                        .clickable {
-
-                            openCatalogSearchCamera()
-                        },
-
-                contentAlignment =
-                    Alignment.Center
-
             ) {
 
                 Text(
-                    text = "📷",
-                    fontSize = 26.sp
+                    text = "+ MODEL",
+                    fontWeight =
+                        FontWeight.Bold
                 )
             }
         }
 
 
-        // ========================================================
+        // --------------------------------------------------------
+        // ARAMA
+        // --------------------------------------------------------
+
+        CatalogSearchBar(
+            query = searchText,
+
+            onQueryChange = {
+                searchText = it
+            },
+
+            onCameraClick = {
+                openCatalogCamera()
+            },
+
+            modifier =
+                Modifier.padding(
+                    top = 12.dp,
+                    bottom = 6.dp
+                )
+        )
+
+
+        // --------------------------------------------------------
         // MODEL SAYISI
-        // ========================================================
+        // --------------------------------------------------------
 
         Row(
             modifier =
@@ -563,44 +530,35 @@ fun CatalogScreen(
         ) {
 
             Text(
-                text =
-                    "KATALOG MODELLERİ",
-
-                fontSize = 15.sp,
-
+                text = "KATALOG MODELLERİ",
+                fontSize = 14.sp,
                 fontWeight =
                     FontWeight.Bold,
-
                 color =
                     Color(0xFF455A64)
             )
-
 
             Spacer(
                 modifier =
                     Modifier.weight(1f)
             )
 
-
             Text(
                 text =
                     "${filteredModels.size} model",
 
-                fontSize = 14.sp,
+                fontSize = 13.sp,
 
-                color =
-                    Color.Gray
+                color = Color.Gray
             )
         }
 
 
-        // ========================================================
-        // MODEL LİSTESİ
-        // ========================================================
+        // --------------------------------------------------------
+        // MODEL GRID
+        // --------------------------------------------------------
 
-        if (
-            filteredModels.isEmpty()
-        ) {
+        if (filteredModels.isEmpty()) {
 
             Box(
                 modifier =
@@ -616,27 +574,11 @@ fun CatalogScreen(
                 ) {
 
                     Text(
-                        text = "⌕",
-                        fontSize = 44.sp,
-                        color = Color.Gray
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(12.dp)
-                    )
-
-                    Text(
-                        text =
-                            "Katalogda model bulunamadı",
-
-                        fontSize = 18.sp,
-
+                        text = "Katalogda model bulunamadı",
+                        fontSize = 17.sp,
                         fontWeight =
                             FontWeight.Bold,
-
-                        color =
-                            DarkText
+                        color = DarkText
                     )
 
                     Spacer(
@@ -646,12 +588,9 @@ fun CatalogScreen(
 
                     Text(
                         text =
-                            "Model numarası, renk veya beden deneyin.",
-
-                        fontSize = 14.sp,
-
-                        color =
-                            Color.Gray
+                            "Model, renk veya beden arayın.",
+                        fontSize = 13.sp,
+                        color = SoftText
                     )
                 }
             }
@@ -675,11 +614,14 @@ fun CatalogScreen(
                     ),
 
                 horizontalArrangement =
-                    Arrangement.spacedBy(10.dp),
+                    Arrangement.spacedBy(
+                        10.dp
+                    ),
 
                 verticalArrangement =
-                    Arrangement.spacedBy(10.dp)
-
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
             ) {
 
                 items(
@@ -695,12 +637,37 @@ fun CatalogScreen(
 
                     CatalogModelCard(
 
-                        model = model,
+                        model =
+                            CatalogModelCardItem(
+
+                                modelNumber =
+                                    model.modelNumber,
+
+                                displayModel =
+                                    model.displayModel,
+
+                                imagePath =
+                                    model.imagePath,
+
+                                colors =
+                                    model.colors,
+
+                                sizes =
+                                    model.sizes
+                            ),
 
                         onClick = {
 
                             selectedModel =
                                 model
+
+                            selectedColor =
+                                model.colors.firstOrNull()
+                                    ?: ""
+
+                            selectedSize =
+                                model.sizes.firstOrNull()
+                                    ?: ""
                         }
                     )
                 }
@@ -710,136 +677,102 @@ fun CatalogScreen(
 
 
     // ============================================================
-    // MODEL DETAYI
+    // MODEL DETAY
     // ============================================================
 
     selectedModel?.let { model ->
 
+        val selectedRealImage =
+            findImageForColor(
+                model = model,
+                color = selectedColor
+            )
+
         CatalogModelDetailDialog(
 
-            model = model,
+            visible = true,
 
-            onDismiss = {
+            modelNumber =
+                model.displayModel,
+
+            imagePath =
+                model.imagePath,
+
+            colors =
+                model.colors,
+
+            sizes =
+                model.sizes,
+
+            selectedColor =
+                selectedColor,
+
+            selectedSize =
+                selectedSize,
+
+            onColorSelected = { color ->
+
+                selectedColor =
+                    color
+            },
+
+            onSizeSelected = { size ->
+
+                selectedSize =
+                    size
+            },
+
+            onEdit = {
+
+                colorDialogInitialValue =
+                    selectedColor
+
+                colorDialogVisible =
+                    true
+            },
+
+            onAddColor = {
+
+                colorDialogInitialValue =
+                    ""
+
+                colorDialogVisible =
+                    true
+            },
+
+            onClose = {
 
                 selectedModel =
                     null
             },
 
-            onColorEdit = { color ->
-
-                colorToEdit =
-                    color
-            },
-
-            onAddColor = { newColor ->
-
-                scope.launch {
-
-                    val alreadyExists =
-                        model.items.any { item ->
-
-                            CatalogColorCatalog.normalize(
-                                item.color
-                            ) ==
-                                    CatalogColorCatalog.normalize(
-                                        newColor
-                                    )
-                        }
-
-                    if (!alreadyExists) {
-
-                        val baseItem =
-                            model.items.firstOrNull()
-
-                        if (baseItem != null) {
-
-                            repository.insert(
-
-                                baseItem.copy(
-
-                                    id =
-                                        "${baseItem.id}_color_${System.currentTimeMillis()}",
-
-                                    productNumber =
-                                        model.modelNumber,
-
-                                    company =
-                                        "SNZ",
-
-                                    color =
-                                        newColor,
-
-                                    // Gerçek katalog fotoğrafı
-                                    // olmadığı için BOŞ bırakıyoruz.
-                                    //
-                                    // Böylece sistem bu rengi
-                                    // gerçek katalog görseli
-                                    // sanmıyor.
-                                    imagePath =
-                                        "",
-
-                                    size =
-                                        ""
-                                )
-                            )
-                        }
-                    }
-                }
-            },
-
-            onSaveModel = { newModelNumber ->
-
-                val cleanedNumber =
-                    normalizeModelNumber(
-                        newModelNumber
-                    )
-
-                if (
-                    cleanedNumber.isNotBlank()
-                ) {
-
-                    scope.launch {
-
-                        model.items.forEach { item ->
-
-                            repository.insert(
-
-                                item.copy(
-
-                                    productNumber =
-                                        cleanedNumber,
-
-                                    company =
-                                        "SNZ"
-                                )
-                            )
-                        }
-
-                        selectedModel =
-                            null
-                    }
-                }
-            }
+            imageOverride =
+                selectedRealImage
         )
     }
 
 
     // ============================================================
-    // RENK DÜZENLEME
+    // RENK EKLE / DÜZENLE
     // ============================================================
 
-    colorToEdit?.let { oldColor ->
+    if (colorDialogVisible) {
 
         CatalogColorEditDialog(
 
-            oldColor =
-                oldColor,
+            visible = true,
 
-            onDismiss = {
+            initialColor =
+                colorDialogInitialValue,
 
-                colorToEdit =
-                    null
-            },
+            title =
+                if (
+                    colorDialogInitialValue.isBlank()
+                ) {
+                    "Kataloğa Renk Ekle"
+                } else {
+                    "Renk Düzenle"
+                },
 
             onSave = { newColor ->
 
@@ -850,24 +783,74 @@ fun CatalogScreen(
                     cleanedColor.isNotBlank()
                 ) {
 
-                    selectedModel?.let { model ->
+                    val model =
+                        selectedModel
+
+                    if (model != null) {
 
                         scope.launch {
 
-                            model.items.forEach { item ->
-
-                                if (
-                                    item.color
+                            val existingItem =
+                                model.items.firstOrNull {
+                                    it.color
                                         .trim()
                                         .equals(
-                                            oldColor.trim(),
+                                            cleanedColor,
                                             ignoreCase = true
                                         )
+                                }
+
+                            if (
+                                existingItem == null
+                            ) {
+
+                                val baseItem =
+                                    model.items.firstOrNull()
+
+                                if (
+                                    baseItem != null
+                                ) {
+
+                                    val newItem =
+                                        baseItem.copy(
+
+                                            id =
+                                                UUID.randomUUID()
+                                                    .toString(),
+
+                                            productNumber =
+                                                model.modelNumber,
+
+                                            company =
+                                                "SNZ",
+
+                                            color =
+                                                cleanedColor,
+
+                                            size =
+                                                selectedSize,
+
+                                            createdAt =
+                                                System.currentTimeMillis()
+                                        )
+
+                                    repository.insert(
+                                        newItem
+                                    )
+                                }
+
+                            } else {
+
+                                if (
+                                    colorDialogInitialValue.isNotBlank() &&
+                                    !existingItem.color.equals(
+                                        colorDialogInitialValue,
+                                        ignoreCase = true
+                                    )
                                 ) {
 
                                     repository.insert(
-
-                                        item.copy(
+                                        existingItem.copy(
                                             color =
                                                 cleanedColor
                                         )
@@ -875,11 +858,27 @@ fun CatalogScreen(
                                 }
                             }
 
-                            colorToEdit =
-                                null
+                            colorDialogVisible =
+                                false
                         }
+
+                    } else {
+
+                        colorDialogVisible =
+                            false
                     }
+
+                } else {
+
+                    colorDialogVisible =
+                        false
                 }
+            },
+
+            onCancel = {
+
+                colorDialogVisible =
+                    false
             }
         )
     }
@@ -889,1883 +888,242 @@ fun CatalogScreen(
     // KAMERA SONUCU
     // ============================================================
 
-    if (
-        showCameraResult
-    ) {
+    if (cameraResultVisible) {
 
         CatalogCameraResultDialog(
 
-            imageUri =
-                capturedImageUri,
+            visible = true,
 
-            onDismiss = {
+            candidates =
+                findCameraCandidates(
+                    models =
+                        modelGroups,
+                    scannedText = ""
+                ),
 
-                showCameraResult =
+            scannedText = "",
+
+            onCandidateSelected = { candidate ->
+
+                val selected =
+                    modelGroups.firstOrNull {
+                        it.modelNumber ==
+                                candidate.modelNumber
+                    }
+
+                if (selected != null) {
+
+                    selectedModel =
+                        selected
+
+                    selectedColor =
+                        selected.colors
+                            .firstOrNull()
+                            ?: ""
+
+                    selectedSize =
+                        selected.sizes
+                            .firstOrNull()
+                            ?: ""
+                }
+
+                cameraResultVisible =
                     false
 
-                capturedImageUri =
+                cameraUri =
                     null
             },
 
-            onSearch = {
+            onNewModel = {
 
-                showCameraResult =
+                cameraResultVisible =
                     false
-            }
-        )
-    }
-}
 
+                cameraUri =
+                    null
 
-// =================================================================
-// MODEL KARTI
-// =================================================================
+                onAddCatalogItem()
+            },
 
-@Composable
-private fun CatalogModelCard(
-    model: CatalogModelGroup,
-    onClick: () -> Unit
-) {
+            onClose = {
 
-    Card(
-
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onClick()
-                },
-
-        shape =
-            RoundedCornerShape(14.dp),
-
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    Color.White
-            ),
-
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
-    ) {
-
-        Column(
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-
-            Box(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(230.dp)
-                        .background(
-                            Color(0xFFE9ECEF)
-                        ),
-
-                contentAlignment =
-                    Alignment.Center
-            ) {
-
-                AsyncImage(
-
-                    model =
-                        buildAssetUri(
-                            model.imagePath
-                        ),
-
-                    contentDescription =
-                        model.displayModel,
-
-                    modifier =
-                        Modifier.fillMaxSize(),
-
-                    contentScale =
-                        ContentScale.Fit
-                )
-            }
-
-
-            Column(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-            ) {
-
-                Text(
-
-                    text =
-                        model.displayModel,
-
-                    fontSize = 19.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        DarkText
-                )
-
-
-                if (
-                    model.colors.isNotEmpty()
-                ) {
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(5.dp)
-                    )
-
-                    Text(
-
-                        text =
-                            "Renk: ${model.colors.joinToString(" • ")}",
-
-                        fontSize = 12.sp,
-
-                        color =
-                            SoftText,
-
-                        maxLines = 2
-                    )
-                }
-
-
-                if (
-                    model.sizes.isNotEmpty()
-                ) {
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(3.dp)
-                    )
-
-                    Text(
-
-                        text =
-                            "Beden: ${model.sizes.joinToString(" • ")}",
-
-                        fontSize = 12.sp,
-
-                        color =
-                            SoftText,
-
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-// =================================================================
-// MODEL DETAY
-// =================================================================
-
-@Composable
-private fun CatalogModelDetailDialog(
-
-    model: CatalogModelGroup,
-
-    onDismiss: () -> Unit,
-
-    onColorEdit: (String) -> Unit,
-
-    onAddColor: (String) -> Unit,
-
-    onSaveModel: (String) -> Unit
-) {
-
-    var editedModelNumber by remember(
-        model.modelNumber
-    ) {
-
-        mutableStateOf(
-            "SNZ-${model.modelNumber}"
-        )
-    }
-
-
-    var selectedColor by remember(
-        model.modelNumber
-    ) {
-
-        mutableStateOf(
-            model.colors.firstOrNull()
-        )
-    }
-
-
-    var availableColors by remember(
-        model.modelNumber,
-        model.colors
-    ) {
-
-        mutableStateOf(
-            model.colors
-        )
-    }
-
-
-    // =============================================================
-    // SEÇİLEN RENGİN GÖRSELİ
-    // =============================================================
-
-    val selectedImagePath = remember(
-
-        selectedColor,
-
-        model.items,
-
-        model.imagePath
-
-    ) {
-
-        val currentColor =
-            selectedColor
-
-        if (
-            currentColor.isNullOrBlank()
-        ) {
-
-            model.imagePath
-
-        } else {
-
-            val normalizedSelected =
-                CatalogColorCatalog.normalize(
-                    currentColor
-                )
-
-            val matchingItem =
-                model.items.firstOrNull { item ->
-
-                    item.imagePath.isNotBlank() &&
-
-                            CatalogColorCatalog.normalize(
-                                item.color
-                            ) ==
-                            normalizedSelected
-                }
-
-            matchingItem?.imagePath
-                ?: model.imagePath
-        }
-    }
-
-
-    // =============================================================
-    // GERÇEK KATALOG GÖRSELİ VAR MI?
-    // =============================================================
-
-    val selectedColorHasRealImage = remember(
-
-        selectedColor,
-
-        model.items
-
-    ) {
-
-        val currentColor =
-            selectedColor
-
-        if (
-            currentColor.isNullOrBlank()
-        ) {
-
-            false
-
-        } else {
-
-            val normalizedSelected =
-                CatalogColorCatalog.normalize(
-                    currentColor
-                )
-
-            model.items.any { item ->
-
-                item.imagePath.isNotBlank() &&
-
-                        CatalogColorCatalog.normalize(
-                            item.color
-                        ) ==
-                        normalizedSelected
-            }
-        }
-    }
-
-
-    val imageDescription =
-        selectedColor?.let { color ->
-
-            "${model.displayModel} - $color"
-
-        } ?: model.displayModel
-
-
-    Dialog(
-
-        onDismissRequest =
-            onDismiss,
-
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth =
+                cameraResultVisible =
                     false
-            )
-    ) {
 
-        Column(
-
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        CatalogBackground
-                    )
-        ) {
-
-
-            // =====================================================
-            // BAŞLIK
-            // =====================================================
-
-            Row(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Color.White
-                        )
-                        .padding(
-                            start = 4.dp,
-                            end = 12.dp,
-                            top = 16.dp,
-                            bottom = 12.dp
-                        ),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                IconButton(
-                    onClick =
-                        onDismiss
-                ) {
-
-                    Text(
-                        text = "×",
-                        fontSize = 32.sp,
-                        color = DarkText
-                    )
-                }
-
-
-                Column(
-                    modifier =
-                        Modifier.weight(1f)
-                ) {
-
-                    Text(
-                        text = "MODEL DETAYI",
-                        fontSize = 21.sp,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color = DarkText
-                    )
-
-                    Text(
-                        text =
-                            "Katalog modelini düzenle",
-                        fontSize = 13.sp,
-                        color = Color.Gray
-                    )
-                }
+                cameraUri =
+                    null
             }
-
-
-            // =====================================================
-            // ÜRÜN GÖRSELİ
-            // =====================================================
-
-            Box(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(470.dp)
-                        .background(
-                            Color(0xFFE9ECEF)
-                        ),
-
-                contentAlignment =
-                    Alignment.Center
-            ) {
-
-                AsyncImage(
-
-                    model =
-                        buildAssetUri(
-                            selectedImagePath
-                        ),
-
-                    contentDescription =
-                        imageDescription,
-
-                    modifier =
-                        Modifier.fillMaxSize(),
-
-                    contentScale =
-                        ContentScale.Fit
-                )
-            }
-
-
-            Column(
-
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .verticalScroll(
-                            rememberScrollState()
-                        )
-                        .padding(18.dp)
-            ) {
-
-
-                // =================================================
-                // MODEL KODU
-                // =================================================
-
-                Text(
-
-                    text = "MODEL KODU",
-
-                    fontSize = 13.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        SoftText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(6.dp)
-                )
-
-
-                OutlinedTextField(
-
-                    value =
-                        editedModelNumber,
-
-                    onValueChange = {
-
-                        editedModelNumber =
-                            it
-                    },
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    singleLine = true,
-
-                    trailingIcon = {
-
-                        Text(
-                            text = "✎",
-                            fontSize = 22.sp,
-                            color =
-                                BlueSlate
-                        )
-                    },
-
-                    shape =
-                        RoundedCornerShape(
-                            12.dp
-                        )
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(20.dp)
-                )
-
-
-                // =================================================
-                // MODELİN MEVCUT RENKLERİ
-                // =================================================
-
-                Text(
-
-                    text =
-                        "MODEL RENKLERİ",
-
-                    fontSize = 13.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        SoftText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-
-                if (
-                    availableColors.isEmpty()
-                ) {
-
-                    Text(
-
-                        text =
-                            "Bu model için henüz renk eklenmemiş.",
-
-                        fontSize = 14.sp,
-
-                        color =
-                            Color.Gray
-                    )
-
-                } else {
-
-                    Row(
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(
-                                    rememberScrollState()
-                                ),
-
-                        horizontalArrangement =
-                            Arrangement.spacedBy(
-                                8.dp
-                            )
-                    ) {
-
-                        availableColors.forEach { color ->
-
-                            CatalogColorChip(
-
-                                color =
-                                    color,
-
-                                selected =
-                                    selectedColor?.let {
-
-                                            current ->
-
-                                        CatalogColorCatalog.normalize(
-                                            current
-                                        ) ==
-                                                CatalogColorCatalog.normalize(
-                                                    color
-                                                )
-
-                                    } ?: false,
-
-                                onClick = {
-
-                                    selectedColor =
-                                        color
-                                },
-
-                                onEdit = {
-
-                                    onColorEdit(
-                                        color
-                                    )
-                                }
-                            )
-                        }
-                    }
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(8.dp)
-                    )
-
-
-                    if (
-                        selectedColorHasRealImage
-                    ) {
-
-                        Text(
-
-                            text =
-                                "✓ Katalogdaki gerçek $selectedColor görseli gösteriliyor.",
-
-                            fontSize = 12.sp,
-
-                            color =
-                                Color(0xFF2E7D32),
-
-                            fontWeight =
-                                FontWeight.Medium
-                        )
-
-                    } else {
-
-                        Text(
-
-                            text =
-                                "Bu renk için gerçek katalog fotoğrafı yok. Orijinal model görseli korunuyor.",
-
-                            fontSize = 12.sp,
-
-                            color =
-                                Color.Gray
-                        )
-                    }
-                }
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(24.dp)
-                )
-
-
-                // =================================================
-                // RENK KATALOĞU
-                // =================================================
-
-                Text(
-
-                    text =
-                        "RENK KATALOĞU",
-
-                    fontSize = 15.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        Color(0xFF607D8B)
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(5.dp)
-                )
-
-
-                Text(
-
-                    text =
-                        "Tüm modeller için ortak 25 renk paleti",
-
-                    fontSize = 12.sp,
-
-                    color =
-                        Color.Gray
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(12.dp)
-                )
-
-
-                // =================================================
-                // 25 RENK PALETİ
-                // =================================================
-
-                Row(
-
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(
-                                rememberScrollState()
-                            ),
-
-                    horizontalArrangement =
-                        Arrangement.spacedBy(
-                            8.dp
-                        )
-                ) {
-
-                    CatalogColorCatalog.colors.forEach { catalogColor ->
-
-                        val alreadyAdded =
-                            availableColors.any {
-
-                                CatalogColorCatalog.normalize(
-                                    it
-                                ) ==
-                                        CatalogColorCatalog.normalize(
-                                            catalogColor.name
-                                        )
-                            }
-
-
-                        CatalogPaletteChip(
-
-                            color =
-                                catalogColor,
-
-                            selected =
-                                selectedColor?.let {
-
-                                        current ->
-
-                                    CatalogColorCatalog.normalize(
-                                        current
-                                    ) ==
-                                            CatalogColorCatalog.normalize(
-                                                catalogColor.name
-                                            )
-
-                                } ?: false,
-
-                            alreadyAdded =
-                                alreadyAdded,
-
-                            onClick = {
-
-                                selectedColor =
-                                    catalogColor.name
-
-
-                                if (
-                                    !alreadyAdded
-                                ) {
-
-                                    availableColors =
-                                        (
-                                                availableColors +
-                                                        catalogColor.name
-                                                )
-                                            .distinctBy {
-
-                                                CatalogColorCatalog.normalize(
-                                                    it
-                                                )
-                                            }
-
-
-                                    onAddColor(
-                                        catalogColor.name
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
-                )
-
-
-                Text(
-
-                    text =
-                        "Renge bastığında model renklerine eklenir. Gerçek katalog görseli varsa o görsel kullanılır.",
-
-                    fontSize = 12.sp,
-
-                    color =
-                        Color.Gray
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(24.dp)
-                )
-
-
-                // =================================================
-                // BEDENLER
-                // =================================================
-
-                Text(
-
-                    text =
-                        "BEDENLER",
-
-                    fontSize = 13.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        SoftText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
-                )
-
-
-                if (
-                    model.sizes.isEmpty()
-                ) {
-
-                    Text(
-
-                        text =
-                            "Katalogda beden bilgisi yok.",
-
-                        fontSize = 14.sp,
-
-                        color =
-                            Color.Gray
-                    )
-
-                } else {
-
-                    Row(
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(
-                                    rememberScrollState()
-                                ),
-
-                        horizontalArrangement =
-                            Arrangement.spacedBy(
-                                8.dp
-                            )
-                    ) {
-
-                        model.sizes.forEach { size ->
-
-                            Box(
-
-                                modifier =
-                                    Modifier
-                                        .background(
-                                            Color.White,
-                                            RoundedCornerShape(
-                                                10.dp
-                                            )
-                                        )
-                                        .padding(
-                                            horizontal = 14.dp,
-                                            vertical = 8.dp
-                                        )
-                            ) {
-
-                                Text(
-
-                                    text =
-                                        size,
-
-                                    fontSize =
-                                        13.sp,
-
-                                    fontWeight =
-                                        FontWeight.Bold,
-
-                                    color =
-                                        DarkText,
-
-                                    maxLines =
-                                        1
-                                )
-                            }
-                        }
-                    }
-                }
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(24.dp)
-                )
-
-
-                // =================================================
-                // MODEL KODU KAYDET
-                // =================================================
-
-                Button(
-
-                    onClick = {
-
-                        onSaveModel(
-                            editedModelNumber
-                        )
-                    },
-
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(54.dp)
-                            .navigationBarsPadding(),
-
-                    shape =
-                        RoundedCornerShape(
-                            12.dp
-                        ),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                BlueSlate
-                        )
-                ) {
-
-                    Text(
-
-                        text =
-                            "MODEL KODUNU KAYDET",
-
-                        fontSize =
-                            16.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(18.dp)
-                )
-            }
-        }
+        )
     }
 }
 
 
-// =================================================================
-// MODEL RENK CHIP
-// =================================================================
+/**
+ * Seçilen rengin gerçek katalog görselini bulur.
+ *
+ * Gerçek renk fotoğrafı yoksa null döner.
+ * Böylece modelin ana görseli korunur.
+ */
+private fun findImageForColor(
+    model: CatalogModelGroup,
+    color: String
+): String? {
 
-@Composable
-private fun CatalogColorChip(
+    if (color.isBlank()) {
+        return null
+    }
 
-    color: String,
+    return model.items
+        .firstOrNull { item ->
 
-    selected: Boolean,
+            item.color
+                .trim()
+                .equals(
+                    color.trim(),
+                    ignoreCase = true
+                ) &&
+                    item.imagePath.isNotBlank()
 
-    onClick: () -> Unit,
+        }
+        ?.imagePath
+}
 
-    onEdit: () -> Unit
-) {
 
-    val catalogColor =
-        CatalogColorCatalog.findByName(
-            color
+/**
+ * Kamera için şimdilik katalogdaki modelleri aday olarak üretir.
+ *
+ * Gerçek görüntü benzerlik motoru ayrı bir aşamada
+ * bağlanacaktır.
+ */
+private fun findCameraCandidates(
+    models: List<CatalogModelGroup>,
+    scannedText: String
+): List<CatalogCameraCandidate> {
+
+    val query =
+        normalizeSearchQuery(
+            scannedText
         )
 
+    if (query.isBlank()) {
+        return emptyList()
+    }
 
-    val backgroundColor =
-        if (selected) {
-
-            BlueSlate
-
-        } else {
-
-            Color.White
+    return models
+        .filter {
+            it.modelNumber.contains(
+                query,
+                ignoreCase = true
+            )
         }
+        .take(5)
+        .map {
+            CatalogCameraCandidate(
 
+                modelNumber =
+                    it.modelNumber,
 
-    val textColor =
-        if (selected) {
-
-            Color.White
-
-        } else {
-
-            DarkText
-        }
-
-
-    Row(
-
-        modifier =
-            Modifier
-                .background(
-                    backgroundColor,
-                    RoundedCornerShape(
-                        10.dp
-                    )
-                ),
-
-        verticalAlignment =
-            Alignment.CenterVertically
-    ) {
-
-
-        Row(
-
-            modifier =
-                Modifier
-                    .clickable {
-                        onClick()
-                    }
-                    .padding(
-                        start = 10.dp,
-                        top = 8.dp,
-                        bottom = 8.dp,
-                        end = 4.dp
-                    ),
-
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            if (
-                catalogColor != null
-            ) {
-
-                Box(
-
-                    modifier =
-                        Modifier
-                            .size(18.dp)
-                            .background(
-                                catalogColor.color,
-                                RoundedCornerShape(
-                                    50
-                                )
-                            )
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(6.dp)
-                )
-            }
-
-
-            Text(
-
-                text =
-                    color,
-
-                fontSize =
-                    13.sp,
+                displayModel =
+                    it.displayModel,
 
                 color =
-                    textColor,
+                    it.colors.firstOrNull()
+                        ?: "",
 
-                fontWeight =
-                    if (selected) {
-
-                        FontWeight.Bold
-
-                    } else {
-
-                        FontWeight.Normal
-                    },
-
-                maxLines =
-                    1
+                similarity =
+                    0.90f
             )
         }
-
-
-        Text(
-
-            text =
-                "✎",
-
-            modifier =
-                Modifier
-                    .clickable {
-                        onEdit()
-                    }
-                    .padding(
-                        horizontal = 7.dp,
-                        vertical = 8.dp
-                    ),
-
-            fontSize =
-                14.sp,
-
-            color =
-                if (selected) {
-
-                    Color.White
-
-                } else {
-
-                    BlueSlate
-                }
-        )
-    }
 }
 
 
-// =================================================================
-// RENK KATALOĞU CHIP
-// =================================================================
-
-@Composable
-private fun CatalogPaletteChip(
-
-    color:
-    com.example.depotakipai.data.catalog.CatalogColorOption,
-
-    selected: Boolean,
-
-    alreadyAdded: Boolean,
-
-    onClick: () -> Unit
-) {
-
-    val backgroundColor =
-
-        when {
-
-            selected ->
-                BlueSlate
-
-            alreadyAdded ->
-                Color(0xFFE8EEF3)
-
-            else ->
-                Color.White
-        }
-
-
-    val textColor =
-
-        if (selected) {
-
-            Color.White
-
-        } else {
-
-            DarkText
-        }
-
-
-    Column(
-
-        modifier =
-            Modifier
-                .width(82.dp)
-                .background(
-                    backgroundColor,
-                    RoundedCornerShape(
-                        12.dp
-                    )
-                )
-                .clickable {
-                    onClick()
-                }
-                .padding(
-                    horizontal = 8.dp,
-                    vertical = 9.dp
-                ),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally
-    ) {
-
-
-        Box(
-
-            modifier =
-                Modifier
-                    .size(28.dp)
-                    .background(
-                        color.color,
-                        RoundedCornerShape(
-                            50
-                        )
-                    )
-        )
-
-
-        Spacer(
-            modifier =
-                Modifier.height(6.dp)
-        )
-
-
-        Text(
-
-            text =
-                color.name,
-
-            fontSize =
-                11.sp,
-
-            fontWeight =
-                if (
-                    selected ||
-                    alreadyAdded
-                ) {
-
-                    FontWeight.Bold
-
-                } else {
-
-                    FontWeight.Normal
-                },
-
-            color =
-                textColor,
-
-            maxLines =
-                1
-        )
-
-
-        Spacer(
-            modifier =
-                Modifier.height(2.dp)
-        )
-
-
-        Text(
-
-            text =
-                if (alreadyAdded) {
-
-                    "EKLİ"
-
-                } else {
-
-                    "EKLE"
-                },
-
-            fontSize =
-                9.sp,
-
-            color =
-                if (selected) {
-
-                    Color.White
-
-                } else {
-
-                    Color(0xFF78909C)
-                }
-        )
-    }
-}
-
-
-// =================================================================
-// RENK DÜZENLEME
-// =================================================================
-
-@Composable
-private fun CatalogColorEditDialog(
-
-    oldColor: String,
-
-    onDismiss: () -> Unit,
-
-    onSave: (String) -> Unit
-) {
-
-    var editedColor by remember(
-        oldColor
-    ) {
-
-        mutableStateOf(
-            oldColor
-        )
-    }
-
-
-    Dialog(
-
-        onDismissRequest =
-            onDismiss,
-
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth =
-                    true
-            )
-    ) {
-
-        Card(
-
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-
-            shape =
-                RoundedCornerShape(
-                    18.dp
-                ),
-
-            colors =
-                CardDefaults.cardColors(
-                    containerColor =
-                        Color.White
-                )
-        ) {
-
-            Column(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-            ) {
-
-                Text(
-
-                    text =
-                        "RENK DÜZENLE",
-
-                    fontSize =
-                        21.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        DarkText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(5.dp)
-                )
-
-
-                Text(
-
-                    text =
-                        "Mevcut renk: $oldColor",
-
-                    fontSize =
-                        13.sp,
-
-                    color =
-                        SoftText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(16.dp)
-                )
-
-
-                OutlinedTextField(
-
-                    value =
-                        editedColor,
-
-                    onValueChange = {
-
-                        editedColor =
-                            it
-                    },
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    singleLine = true,
-
-                    label = {
-
-                        Text(
-                            text =
-                                "Yeni renk"
-                        )
-                    },
-
-                    trailingIcon = {
-
-                        Text(
-                            text = "✎",
-                            fontSize = 21.sp,
-                            color =
-                                BlueSlate
-                        )
-                    },
-
-                    shape =
-                        RoundedCornerShape(
-                            12.dp
-                        )
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(18.dp)
-                )
-
-
-                Row(
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    horizontalArrangement =
-                        Arrangement.spacedBy(
-                            10.dp
-                        )
-                ) {
-
-                    Button(
-
-                        onClick =
-                            onDismiss,
-
-                        modifier =
-                            Modifier.weight(1f),
-
-                        shape =
-                            RoundedCornerShape(
-                                12.dp
-                            ),
-
-                        colors =
-                            ButtonDefaults.buttonColors(
-
-                                containerColor =
-                                    Color(0xFFE8ECEF),
-
-                                contentColor =
-                                    DarkText
-                            )
-                    ) {
-
-                        Text(
-                            text =
-                                "VAZGEÇ"
-                        )
-                    }
-
-
-                    Button(
-
-                        onClick = {
-
-                            val cleaned =
-                                editedColor.trim()
-
-                            if (
-                                cleaned.isNotBlank()
-                            ) {
-
-                                onSave(
-                                    cleaned
-                                )
-                            }
-                        },
-
-                        modifier =
-                            Modifier.weight(1f),
-
-                        shape =
-                            RoundedCornerShape(
-                                12.dp
-                            ),
-
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor =
-                                    BlueSlate
-                            )
-                    ) {
-
-                        Text(
-
-                            text =
-                                "KAYDET",
-
-                            fontWeight =
-                                FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-// =================================================================
-// KAMERA SONUCU
-// =================================================================
-
-@Composable
-private fun CatalogCameraResultDialog(
-
-    imageUri: Uri?,
-
-    onDismiss: () -> Unit,
-
-    onSearch: () -> Unit
-) {
-
-    Dialog(
-
-        onDismissRequest =
-            onDismiss,
-
-        properties =
-            DialogProperties(
-                usePlatformDefaultWidth =
-                    false
-            )
-    ) {
-
-        Column(
-
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color.Black
-                    )
-        ) {
-
-
-            Row(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            top = 16.dp,
-                            start = 8.dp,
-                            end = 8.dp
-                        ),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                IconButton(
-                    onClick =
-                        onDismiss
-                ) {
-
-                    Text(
-                        text = "×",
-                        fontSize = 32.sp,
-                        color =
-                            Color.White
-                    )
-                }
-
-
-                Text(
-
-                    text =
-                        "KATALOG FOTOĞRAF ARAMA",
-
-                    fontSize =
-                        18.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        Color.White
-                )
-            }
-
-
-            Box(
-
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-
-                contentAlignment =
-                    Alignment.Center
-            ) {
-
-                if (
-                    imageUri != null
-                ) {
-
-                    AsyncImage(
-
-                        model =
-                            imageUri,
-
-                        contentDescription =
-                            "Çekilen ürün",
-
-                        modifier =
-                            Modifier.fillMaxSize(),
-
-                        contentScale =
-                            ContentScale.Fit
-                    )
-                }
-            }
-
-
-            Column(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Color.White
-                        )
-                        .padding(16.dp)
-            ) {
-
-                Text(
-
-                    text =
-                        "Fotoğraf hazır",
-
-                    fontSize =
-                        18.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color =
-                        DarkText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(6.dp)
-                )
-
-
-                Text(
-
-                    text =
-                        "Bu fotoğraf katalogdaki ürünlerle karşılaştırılacak.",
-
-                    fontSize =
-                        13.sp,
-
-                    color =
-                        SoftText
-                )
-
-
-                Spacer(
-                    modifier =
-                        Modifier.height(12.dp)
-                )
-
-
-                Button(
-
-                    onClick =
-                        onSearch,
-
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-
-                    shape =
-                        RoundedCornerShape(
-                            12.dp
-                        ),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                BlueSlate
-                        )
-                ) {
-
-                    Text(
-
-                        text =
-                            "KATALOGDA ARA",
-
-                        fontSize =
-                            16.sp,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-// =================================================================
-// MODEL NUMARASI
-// =================================================================
-
+/**
+ * MEY2607
+ * EY2607
+ * SNZ2607
+ * SNZ-2607
+ *
+ * hepsini:
+ *
+ * 2607
+ *
+ * yapar.
+ */
 private fun normalizeModelNumber(
     value: String
 ): String {
 
     return value
-
         .trim()
-
         .uppercase()
-
         .replace(
             "İ",
             "I"
         )
-
         .replace(
             " ",
             ""
         )
-
         .replace(
             "-",
             ""
         )
-
         .replace(
             "_",
             ""
         )
-
         .replace(
-            Regex("^[A-Z]+"),
+            Regex(
+                "^[A-Z]+"
+            ),
             ""
         )
-
         .filter {
             it.isDigit()
         }
 }
 
 
-// =================================================================
-// ARAMA NORMALİZASYONU
-// =================================================================
-
+/**
+ * Arama normalizasyonu.
+ *
+ * SNZ-2607
+ * MEY2607
+ * EY2607
+ * 2607
+ *
+ * aynı modele ulaşır.
+ */
 private fun normalizeSearchQuery(
     value: String
 ): String {
 
-    val cleaned =
-
-        value
-
-            .trim()
-
-            .uppercase()
-
-            .replace(
-                "İ",
-                "I"
-            )
-
-            .replace(
-                " ",
-                ""
-            )
-
-            .replace(
-                "-",
-                ""
-            )
-
-            .replace(
-                "_",
-                ""
-            )
-
-
-    return cleaned
-
+    return value
+        .trim()
+        .uppercase()
         .replace(
-            Regex("^[A-Z]+"),
+            "İ",
+            "I"
+        )
+        .replace(
+            " ",
             ""
         )
-
+        .replace(
+            "-",
+            ""
+        )
+        .replace(
+            "_",
+            ""
+        )
+        .replace(
+            Regex(
+                "^[A-Z]+"
+            ),
+            ""
+        )
         .filter {
             it.isDigit()
         }
-}
-
-
-// =================================================================
-// ASSET URI
-// =================================================================
-
-private fun buildAssetUri(
-    imagePath: String
-): String {
-
-    var path =
-        imagePath
-            .trim()
-            .replace(
-                "\\",
-                "/"
-            )
-
-
-    path =
-        path.removePrefix(
-            "file:///android_asset/"
-        )
-
-
-    path =
-        path.removePrefix(
-            "android_asset/"
-        )
-
-
-    if (
-        !path.startsWith(
-            "catalog/"
-        )
-    ) {
-
-        path =
-
-            if (
-                path.startsWith(
-                    "images/"
-                )
-            ) {
-
-                "catalog/$path"
-
-            } else {
-
-                "catalog/images/$path"
-            }
-    }
-
-
-    return "file:///android_asset/$path"
 }
