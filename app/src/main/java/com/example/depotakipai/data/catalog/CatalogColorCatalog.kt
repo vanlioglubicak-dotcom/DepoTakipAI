@@ -9,135 +9,150 @@ data class CatalogColorOption(
 
 object CatalogColorCatalog {
 
+    /**
+     * Uygulamanın merkezi renk kataloğu.
+     *
+     * Tüm modeller bu ortak renk listesini kullanır.
+     * Model sayısı artsa bile burada yeni model için
+     * ayrıca renk listesi oluşturulmaz.
+     */
     val colors: List<CatalogColorOption> = listOf(
 
         CatalogColorOption(
-            "Siyah",
-            Color(0xFF111111)
+            name = "Siyah",
+            color = Color(0xFF151515)
         ),
 
         CatalogColorOption(
-            "Beyaz",
-            Color(0xFFFFFFFF)
+            name = "Beyaz",
+            color = Color(0xFFFFFFFF)
         ),
 
         CatalogColorOption(
-            "Kırmızı",
-            Color(0xFFD32F2F)
+            name = "Kırmızı",
+            color = Color(0xFFD32F2F)
         ),
 
         CatalogColorOption(
-            "Bordo",
-            Color(0xFF8E0038)
+            name = "Bordo",
+            color = Color(0xFF800020)
         ),
 
         CatalogColorOption(
-            "Lacivert",
-            Color(0xFF172A55)
+            name = "Lacivert",
+            color = Color(0xFF172A5C)
         ),
 
         CatalogColorOption(
-            "Mavi",
-            Color(0xFF1976D2)
+            name = "Mavi",
+            color = Color(0xFF1976D2)
         ),
 
         CatalogColorOption(
-            "Açık Mavi",
-            Color(0xFF64B5F6)
+            name = "Açık Mavi",
+            color = Color(0xFF64B5F6)
         ),
 
         CatalogColorOption(
-            "Haki",
-            Color(0xFF68734D)
+            name = "Haki",
+            color = Color(0xFF6B7043)
         ),
 
         CatalogColorOption(
-            "Yeşil",
-            Color(0xFF388E3C)
+            name = "Yeşil",
+            color = Color(0xFF388E3C)
         ),
 
         CatalogColorOption(
-            "Zümrüt",
-            Color(0xFF00897B)
+            name = "Zümrüt",
+            color = Color(0xFF00897B)
         ),
 
         CatalogColorOption(
-            "Petrol",
-            Color(0xFF006064)
+            name = "Petrol",
+            color = Color(0xFF006064)
         ),
 
         CatalogColorOption(
-            "Mor",
-            Color(0xFF6A1B9A)
+            name = "Mor",
+            color = Color(0xFF7B1FA2)
         ),
 
         CatalogColorOption(
-            "Lila",
-            Color(0xFFBA68C8)
+            name = "Lila",
+            color = Color(0xFFB39DDB)
         ),
 
         CatalogColorOption(
-            "Pembe",
-            Color(0xFFE91E63)
+            name = "Pembe",
+            color = Color(0xFFE91E63)
         ),
 
         CatalogColorOption(
-            "Pudra",
-            Color(0xFFE8B7B7)
+            name = "Pudra",
+            color = Color(0xFFE8B7B7)
         ),
 
         CatalogColorOption(
-            "Fuşya",
-            Color(0xFFC2185B)
+            name = "Fuşya",
+            color = Color(0xFFC2185B)
         ),
 
         CatalogColorOption(
-            "Turuncu",
-            Color(0xFFF57C00)
+            name = "Turuncu",
+            color = Color(0xFFF57C00)
         ),
 
         CatalogColorOption(
-            "Sarı",
-            Color(0xFFFBC02D)
+            name = "Sarı",
+            color = Color(0xFFFBC02D)
         ),
 
         CatalogColorOption(
-            "Bej",
-            Color(0xFFD7CCC8)
+            name = "Bej",
+            color = Color(0xFFD7C4A3)
         ),
 
         CatalogColorOption(
-            "Krem",
-            Color(0xFFFFF3D6)
+            name = "Krem",
+            color = Color(0xFFFFF1D0)
         ),
 
         CatalogColorOption(
-            "Vanilya",
-            Color(0xFFF3E5AB)
+            name = "Vanilya",
+            color = Color(0xFFF3E5AB)
         ),
 
         CatalogColorOption(
-            "Kahverengi",
-            Color(0xFF795548)
+            name = "Kahverengi",
+            color = Color(0xFF6D4C41)
         ),
 
         CatalogColorOption(
-            "Vizon",
-            Color(0xFF9E8C7A)
+            name = "Vizon",
+            color = Color(0xFF8C7561)
         ),
 
         CatalogColorOption(
-            "Gri",
-            Color(0xFF9E9E9E)
+            name = "Gri",
+            color = Color(0xFF808080)
         ),
 
         CatalogColorOption(
-            "Antrasit",
-            Color(0xFF424242)
+            name = "Antrasit",
+            color = Color(0xFF424242)
         )
     )
 
-
+    /**
+     * Renk karşılaştırmalarında kullanılan standart normalizasyon.
+     *
+     * Örnek:
+     * "Bordo"      -> "BORDO"
+     * " bordo "    -> "BORDO"
+     * "Kırmızı"    -> "KIRMIZI"
+     * "KIRMIZI"    -> "KIRMIZI"
+     */
     fun normalize(
         value: String
     ): String {
@@ -156,18 +171,41 @@ object CatalogColorCatalog {
             .replace(" ", "")
     }
 
-
+    /**
+     * İsme göre merkezi renk kataloğundan renk bulur.
+     */
     fun findByName(
         value: String
     ): CatalogColorOption? {
 
-        val normalized =
-            normalize(value)
+        val normalized = normalize(value)
 
-        return colors.firstOrNull {
-
-            normalize(it.name) ==
-                    normalized
+        return colors.firstOrNull { option ->
+            normalize(option.name) == normalized
         }
+    }
+
+    /**
+     * Rengin merkezi katalogda bulunup bulunmadığını kontrol eder.
+     */
+    fun contains(
+        value: String
+    ): Boolean {
+
+        return findByName(value) != null
+    }
+
+    /**
+     * Merkezi katalogdaki gerçek renk adını döndürür.
+     *
+     * Örneğin:
+     * "bordo" -> "Bordo"
+     * "LACİVERT" -> "Lacivert"
+     */
+    fun canonicalName(
+        value: String
+    ): String? {
+
+        return findByName(value)?.name
     }
 }

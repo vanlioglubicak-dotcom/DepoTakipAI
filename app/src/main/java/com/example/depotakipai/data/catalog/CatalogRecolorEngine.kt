@@ -6,15 +6,31 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 import kotlin.math.roundToInt
 
 /**
- * Katalog ürün görseli için kontrollü renk değiştirme motoru.
+ * ============================================================
+ * KATALOG RECOLOR MOTORU
+ * ============================================================
  *
- * Arka planın tamamını boyamak yerine yalnızca
- * CatalogGarmentMask tarafından belirlenen alan üzerinde çalışır.
+ * Katalog ürün görselinde kontrollü renk değiştirme işlemi yapar.
  *
- * Işık ve gölge bilgisini korumaya çalışır.
+ * Önemli:
+ * - Bütün resmi boyamaz.
+ * - CatalogGarmentMask tarafından oluşturulan maske kullanılır.
+ * - Arka plan maskenin dışında tutulur.
+ * - Kaynak görselin ışık/gölge bilgisi korunmaya çalışılır.
+ * - Maske güvenilir değilse orijinal görsel korunur.
+ *
+ * Bu yapı ileride gerçek AI/ML kıyafet segmentasyonu
+ * ile değiştirilebilir.
  */
 object CatalogRecolorEngine {
 
+    /**
+     * ------------------------------------------------------------
+     * MASKELİ RECOLOR
+     * ------------------------------------------------------------
+     *
+     * Verilen maske alanında renk değiştirir.
+     */
     fun recolor(
         source: Bitmap,
         targetColor: ComposeColor,
@@ -28,61 +44,91 @@ object CatalogRecolorEngine {
             "Kaynak görsel ile maske boyutları aynı olmalıdır."
         }
 
-        val result = source.copy(
-            Bitmap.Config.ARGB_8888,
-            true
-        )
+        val result =
+            source.copy(
+                Bitmap.Config.ARGB_8888,
+                true
+            )
 
         val targetRed =
-            (targetColor.red * 255f).coerceIn(0f, 255f)
+            (targetColor.red * 255f)
+                .coerceIn(
+                    0f,
+                    255f
+                )
 
         val targetGreen =
-            (targetColor.green * 255f).coerceIn(0f, 255f)
+            (targetColor.green * 255f)
+                .coerceIn(
+                    0f,
+                    255f
+                )
 
         val targetBlue =
-            (targetColor.blue * 255f).coerceIn(0f, 255f)
+            (targetColor.blue * 255f)
+                .coerceIn(
+                    0f,
+                    255f
+                )
 
         for (y in 0 until source.height) {
+
             for (x in 0 until source.width) {
 
                 val sourcePixel =
-                    source.getPixel(x, y)
+                    source.getPixel(
+                        x,
+                        y
+                    )
 
                 val maskPixel =
-                    mask.getPixel(x, y)
+                    mask.getPixel(
+                        x,
+                        y
+                    )
 
                 val maskAlpha =
-                    Color.alpha(maskPixel)
+                    Color.alpha(
+                        maskPixel
+                    )
 
                 if (maskAlpha <= 0) {
                     continue
                 }
 
                 val sourceAlpha =
-                    Color.alpha(sourcePixel)
+                    Color.alpha(
+                        sourcePixel
+                    )
 
                 if (sourceAlpha <= 0) {
                     continue
                 }
 
                 val red =
-                    Color.red(sourcePixel).toFloat()
+                    Color.red(
+                        sourcePixel
+                    ).toFloat()
 
                 val green =
-                    Color.green(sourcePixel).toFloat()
+                    Color.green(
+                        sourcePixel
+                    ).toFloat()
 
                 val blue =
-                    Color.blue(sourcePixel).toFloat()
+                    Color.blue(
+                        sourcePixel
+                    ).toFloat()
 
-                /*
-                 * Kaynak görüntünün parlaklığını koruyoruz.
+                /**
+                 * Kaynak görselin parlaklık değerini hesapla.
                  *
-                 * Böylece kumaşın:
+                 * Bu değer:
+                 * - kumaş kıvrımlarını
                  * - gölgeleri
-                 * - kıvrımları
                  * - ışık alan bölgeleri
                  *
-                 * tamamen düz bir renge dönüşmez.
+                 * mümkün olduğunca korumaya yardımcı olur.
                  */
                 val luminance =
                     (
@@ -91,9 +137,9 @@ object CatalogRecolorEngine {
                                     blue * 0.0722f
                             ) / 255f
 
-                /*
-                 * Çok karanlık bölgelerin tamamen siyaha
-                 * düşmesini engelliyoruz.
+                /**
+                 * Çok karanlık bölgelerin tamamen
+                 * siyaha düşmesini engelle.
                  */
                 val safeLuminance =
                     luminance.coerceIn(
@@ -103,7 +149,8 @@ object CatalogRecolorEngine {
 
                 val recoloredRed =
                     (
-                            targetRed * safeLuminance
+                            targetRed *
+                                    safeLuminance
                             ).coerceIn(
                             0f,
                             255f
@@ -111,7 +158,8 @@ object CatalogRecolorEngine {
 
                 val recoloredGreen =
                     (
-                            targetGreen * safeLuminance
+                            targetGreen *
+                                    safeLuminance
                             ).coerceIn(
                             0f,
                             255f
@@ -119,38 +167,59 @@ object CatalogRecolorEngine {
 
                 val recoloredBlue =
                     (
-                            targetBlue * safeLuminance
+                            targetBlue *
+                                    safeLuminance
                             ).coerceIn(
                             0f,
                             255f
                         )
 
-                /*
-                 * Maske kenarlarında yumuşak geçiş.
+                /**
+                 * Maskenin alfa değerine göre
+                 * orijinal ve yeni renk arasında
+                 * yumuşak geçiş yapılır.
                  */
                 val blendAmount =
                     maskAlpha / 255f
 
                 val finalRed =
                     red * (1f - blendAmount) +
-                            recoloredRed * blendAmount
+                            recoloredRed *
+                            blendAmount
 
                 val finalGreen =
                     green * (1f - blendAmount) +
-                            recoloredGreen * blendAmount
+                            recoloredGreen *
+                            blendAmount
 
                 val finalBlue =
                     blue * (1f - blendAmount) +
-                            recoloredBlue * blendAmount
+                            recoloredBlue *
+                            blendAmount
 
                 result.setPixel(
                     x,
                     y,
                     Color.argb(
                         sourceAlpha,
-                        finalRed.roundToInt().coerceIn(0, 255),
-                        finalGreen.roundToInt().coerceIn(0, 255),
-                        finalBlue.roundToInt().coerceIn(0, 255)
+                        finalRed
+                            .roundToInt()
+                            .coerceIn(
+                                0,
+                                255
+                            ),
+                        finalGreen
+                            .roundToInt()
+                            .coerceIn(
+                                0,
+                                255
+                            ),
+                        finalBlue
+                            .roundToInt()
+                            .coerceIn(
+                                0,
+                                255
+                            )
                     )
                 )
             }
@@ -159,29 +228,60 @@ object CatalogRecolorEngine {
         return result
     }
 
+
     /**
-     * Önce maske oluşturur, sonra güvenliyse recolor yapar.
+     * ------------------------------------------------------------
+     * GÜVENLİ RECOLOR
+     * ------------------------------------------------------------
      *
-     * Maske güvenilir değilse kaynak görsel bozulmadan
-     * aynen kopyalanır.
+     * Önce CatalogGarmentMask ile kıyafet alanı belirlenir.
+     *
+     * Maske güvenilir değilse:
+     *
+     *     ORİJİNAL GÖRSEL
+     *
+     * döndürülür.
+     *
+     * Böylece hatalı maske bütün fotoğrafı boyamaz.
      */
     fun recolorSafely(
         source: Bitmap,
         targetColor: ComposeColor
     ): Bitmap {
 
-        val maskResult =
-            CatalogGarmentMask.createMask(
-                source = source
-            )
-
-        if (!CatalogGarmentMask.isUsable(maskResult)) {
+        if (
+            source.width <= 0 ||
+            source.height <= 0
+        ) {
             return source.copy(
                 Bitmap.Config.ARGB_8888,
                 true
             )
         }
 
+        val maskResult =
+            CatalogGarmentMask.createMask(
+                source = source
+            )
+
+        /**
+         * Maske güvenilir değilse
+         * hiçbir değişiklik yapma.
+         */
+        if (
+            !CatalogGarmentMask.isUsable(
+                maskResult
+            )
+        ) {
+            return source.copy(
+                Bitmap.Config.ARGB_8888,
+                true
+            )
+        }
+
+        /**
+         * Maske kenarlarını yumuşat.
+         */
         val softenedMask =
             CatalogGarmentMask.soften(
                 mask = maskResult.mask,

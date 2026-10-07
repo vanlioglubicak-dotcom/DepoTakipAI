@@ -3,6 +3,7 @@ package com.example.depotakipai.ui.catalog
 import android.content.ContentValues
 import android.net.Uri
 import android.provider.MediaStore
+import android.widget.Toast
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,20 +18,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,24 +35,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.example.depotakipai.data.catalog.CatalogRepository
 import com.example.depotakipai.data.local.DatabaseProvider
-import com.example.depotakipai.data.local.entity.CatalogItemEntity
 
 import com.example.depotakipai.ui.catalog.components.CatalogModelCard
 import com.example.depotakipai.ui.catalog.components.CatalogModelCardItem
 import com.example.depotakipai.ui.catalog.components.CatalogSearchBar
+
 import com.example.depotakipai.ui.catalog.dialog.CatalogCameraCandidate
 import com.example.depotakipai.ui.catalog.dialog.CatalogCameraResultDialog
 import com.example.depotakipai.ui.catalog.dialog.CatalogColorEditDialog
 import com.example.depotakipai.ui.catalog.dialog.CatalogModelDetailDialog
+import com.example.depotakipai.ui.catalog.dialog.CatalogModelEditDialog
+
 import com.example.depotakipai.ui.catalog.model.CatalogModelGroup
 
 import kotlinx.coroutines.launch
@@ -63,24 +64,11 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 
-private val CatalogBackground =
-    Color(0xFFF6F7F9)
-
-private val DarkText =
-    Color(0xFF263238)
-
-private val BlueSlate =
-    Color(0xFF557392)
-
-private val SoftText =
-    Color(0xFF607D8B)
+private val CatalogBackground = Color(0xFFF6F7F9)
+private val DarkText = Color(0xFF263238)
+private val SoftText = Color(0xFF607D8B)
 
 
-/**
- * AppNavigation tarafından kullanılan katalog özet modeli.
- *
- * Bu model stok yapısına dokunmaz.
- */
 data class CatalogPreviewItem(
     val productNumber: String,
     val company: String,
@@ -95,104 +83,93 @@ fun CatalogScreen(
     onAddCatalogItem: () -> Unit = {},
     items: List<CatalogPreviewItem> = emptyList()
 ) {
+    val context = LocalContext.current
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val database = remember {
+        DatabaseProvider.getDatabase(context)
+    }
 
-    val database =
-        remember {
-            DatabaseProvider.getDatabase(
-                context
-            )
-        }
-
-    val repository =
-        remember(database) {
-            CatalogRepository(
-                catalogItemDao =
-                    database.catalogItemDao()
-            )
-        }
-
-    val catalogItems by
-    repository
-        .getAll()
-        .collectAsState(
-            initial = emptyList()
+    val repository = remember(database) {
+        CatalogRepository(
+            catalogItemDao = database.catalogItemDao()
         )
+    }
 
-    val scope =
-        rememberCoroutineScope()
+    val catalogItems by repository
+        .getAll()
+        .collectAsState(initial = emptyList())
+
+    val scope = rememberCoroutineScope()
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // ARAMA
-    // ============================================================
+    // ------------------------------------------------------------
 
-    var searchText by
-    remember {
+    var searchText by remember {
         mutableStateOf("")
     }
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // SEÇİLİ MODEL
-    // ============================================================
+    // ------------------------------------------------------------
 
-    var selectedModel by
-    remember {
+    var selectedModel by remember {
         mutableStateOf<CatalogModelGroup?>(null)
     }
 
-
-    // ============================================================
-    // SEÇİLİ RENK / BEDEN
-    // ============================================================
-
-    var selectedColor by
-    remember {
+    var selectedColor by remember {
         mutableStateOf("")
     }
 
-    var selectedSize by
-    remember {
+    var selectedSize by remember {
         mutableStateOf("")
     }
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // RENK DÜZENLEME
-    // ============================================================
+    // ------------------------------------------------------------
 
-    var colorDialogVisible by
-    remember {
+    var colorDialogVisible by remember {
         mutableStateOf(false)
     }
 
-    var colorDialogInitialValue by
-    remember {
+    var colorDialogInitialValue by remember {
         mutableStateOf("")
     }
 
 
-    // ============================================================
-    // KAMERA
-    // ============================================================
+    // ------------------------------------------------------------
+    // MODEL KODU DÜZENLEME
+    // ------------------------------------------------------------
 
-    var cameraUri by
-    remember {
+    var modelEditDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var modelEditInitialValue by remember {
+        mutableStateOf("")
+    }
+
+
+    // ------------------------------------------------------------
+    // KAMERA
+    // ------------------------------------------------------------
+
+    var cameraUri by remember {
         mutableStateOf<Uri?>(null)
     }
 
-    var cameraResultVisible by
-    remember {
+    var cameraResultVisible by remember {
         mutableStateOf(false)
     }
 
 
     val cameraLauncher =
         rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts.TakePicture()
+            contract = ActivityResultContracts.TakePicture()
         ) { success ->
 
             if (success && cameraUri != null) {
@@ -205,19 +182,18 @@ fun CatalogScreen(
 
     fun openCatalogCamera() {
 
-        val values =
-            ContentValues().apply {
+        val values = ContentValues().apply {
 
-                put(
-                    MediaStore.Images.Media.DISPLAY_NAME,
-                    "katalog_arama_${System.currentTimeMillis()}.jpg"
-                )
+            put(
+                MediaStore.Images.Media.DISPLAY_NAME,
+                "katalog_arama_${System.currentTimeMillis()}.jpg"
+            )
 
-                put(
-                    MediaStore.Images.Media.MIME_TYPE,
-                    "image/jpeg"
-                )
-            }
+            put(
+                MediaStore.Images.Media.MIME_TYPE,
+                "image/jpeg"
+            )
+        }
 
         val uri =
             context.contentResolver.insert(
@@ -234,108 +210,91 @@ fun CatalogScreen(
     }
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // MODEL GRUPLARI
-    //
-    // MEY2607
-    // EY2607
-    // SNZ-2607
-    //
-    // hepsi:
-    //
-    // SNZ-2607
-    // ============================================================
+    // ------------------------------------------------------------
 
-    val modelGroups =
-        remember(catalogItems) {
+    val modelGroups = remember(catalogItems) {
 
-            catalogItems
-                .groupBy { item ->
+        catalogItems
+            .groupBy { item ->
+                normalizeModelNumber(item.productNumber)
+            }
+            .mapNotNull { entry ->
 
-                    normalizeModelNumber(
-                        item.productNumber
+                val modelNumber = entry.key
+                val modelItems = entry.value
+
+                if (
+                    modelNumber.isBlank() ||
+                    modelItems.isEmpty()
+                ) {
+                    null
+                } else {
+
+                    val firstImage =
+                        modelItems.firstOrNull {
+                            it.imagePath.isNotBlank()
+                        }
+
+                    val first =
+                        firstImage
+                            ?: modelItems.first()
+
+                    CatalogModelGroup(
+
+                        modelNumber = modelNumber,
+
+                        displayModel =
+                            "SNZ-$modelNumber",
+
+                        imagePath =
+                            first.imagePath,
+
+                        colors =
+                            modelItems
+                                .map {
+                                    it.color.trim()
+                                }
+                                .filter {
+                                    it.isNotBlank()
+                                }
+                                .distinct()
+                                .sorted(),
+
+                        sizes =
+                            modelItems
+                                .map {
+                                    it.size.trim()
+                                }
+                                .filter {
+                                    it.isNotBlank()
+                                }
+                                .distinct()
+                                .sorted(),
+
+                        items = modelItems
                     )
                 }
-                .mapNotNull { entry ->
+            }
+            .sortedWith(
 
-                    val modelNumber =
-                        entry.key
+                compareBy<CatalogModelGroup> {
 
-                    val modelItems =
-                        entry.value
+                    it.modelNumber.toIntOrNull()
+                        ?: Int.MAX_VALUE
 
-                    if (
-                        modelNumber.isBlank() ||
-                        modelItems.isEmpty()
-                    ) {
-                        null
-                    } else {
+                }.thenBy {
 
-                        val firstImage =
-                            modelItems.firstOrNull {
-                                it.imagePath.isNotBlank()
-                            }
-
-                        val first =
-                            firstImage
-                                ?: modelItems.first()
-
-                        CatalogModelGroup(
-
-                            modelNumber =
-                                modelNumber,
-
-                            displayModel =
-                                "SNZ-$modelNumber",
-
-                            imagePath =
-                                first.imagePath,
-
-                            colors =
-                                modelItems
-                                    .map {
-                                        it.color.trim()
-                                    }
-                                    .filter {
-                                        it.isNotBlank()
-                                    }
-                                    .distinct()
-                                    .sorted(),
-
-                            sizes =
-                                modelItems
-                                    .map {
-                                        it.size.trim()
-                                    }
-                                    .filter {
-                                        it.isNotBlank()
-                                    }
-                                    .distinct()
-                                    .sorted(),
-
-                            items =
-                                modelItems
-                        )
-                    }
+                    it.modelNumber
                 }
-                .sortedWith(
-                    compareBy<CatalogModelGroup> {
-
-                        it.modelNumber
-                            .toIntOrNull()
-                            ?: Int.MAX_VALUE
-
-                    }.thenBy {
-
-                        it.modelNumber
-                    }
-                )
-        }
+            )
+    }
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // FİLTRE
-    // ============================================================
+    // ------------------------------------------------------------
 
     val filteredModels =
         remember(
@@ -353,17 +312,16 @@ fun CatalogScreen(
             } else {
 
                 val normalizedQuery =
-                    normalizeSearchQuery(
-                        query
-                    )
+                    normalizeSearchQuery(query)
 
                 modelGroups.filter { model ->
 
                     val modelMatch =
-                        model.modelNumber.contains(
-                            normalizedQuery,
-                            ignoreCase = true
-                        )
+                        normalizedQuery.isNotBlank() &&
+                                model.modelNumber.contains(
+                                    normalizedQuery,
+                                    ignoreCase = true
+                                )
 
                     val displayMatch =
                         model.displayModel.contains(
@@ -398,36 +356,30 @@ fun CatalogScreen(
         }
 
 
-    // ============================================================
+    // ------------------------------------------------------------
     // ANA EKRAN
-    // ============================================================
+    // ------------------------------------------------------------
 
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    CatalogBackground
-                )
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CatalogBackground)
     ) {
 
         // --------------------------------------------------------
-        // BAŞLIK
+        // ÜST BAR
         // --------------------------------------------------------
 
         Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Color.White
-                    )
-                    .padding(
-                        start = 6.dp,
-                        end = 12.dp,
-                        top = 16.dp,
-                        bottom = 12.dp
-                    ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(
+                    start = 6.dp,
+                    end = 12.dp,
+                    top = 16.dp,
+                    bottom = 12.dp
+                ),
 
             verticalAlignment =
                 Alignment.CenterVertically
@@ -440,10 +392,10 @@ fun CatalogScreen(
                 Text(
                     text = "‹",
                     fontSize = 38.sp,
-                    color =
-                        Color(0xFF37474F)
+                    color = Color(0xFF37474F)
                 )
             }
+
 
             Column(
                 modifier =
@@ -453,8 +405,7 @@ fun CatalogScreen(
                 Text(
                     text = "KATALOG",
                     fontSize = 23.sp,
-                    fontWeight =
-                        FontWeight.Bold,
+                    fontWeight = FontWeight.Bold,
                     color = DarkText
                 )
 
@@ -470,20 +421,18 @@ fun CatalogScreen(
                 )
             }
 
+
             OutlinedButton(
                 onClick =
                     onAddCatalogItem,
 
                 shape =
-                    RoundedCornerShape(
-                        10.dp
-                    )
+                    RoundedCornerShape(10.dp)
             ) {
 
                 Text(
                     text = "+ MODEL",
-                    fontWeight =
-                        FontWeight.Bold
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -494,6 +443,7 @@ fun CatalogScreen(
         // --------------------------------------------------------
 
         CatalogSearchBar(
+
             query = searchText,
 
             onQueryChange = {
@@ -517,13 +467,12 @@ fun CatalogScreen(
         // --------------------------------------------------------
 
         Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = 18.dp,
-                        vertical = 6.dp
-                    ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 6.dp
+                ),
 
             verticalAlignment =
                 Alignment.CenterVertically
@@ -532,10 +481,8 @@ fun CatalogScreen(
             Text(
                 text = "KATALOG MODELLERİ",
                 fontSize = 14.sp,
-                fontWeight =
-                    FontWeight.Bold,
-                color =
-                    Color(0xFF455A64)
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF455A64)
             )
 
             Spacer(
@@ -548,14 +495,13 @@ fun CatalogScreen(
                     "${filteredModels.size} model",
 
                 fontSize = 13.sp,
-
                 color = Color.Gray
             )
         }
 
 
         // --------------------------------------------------------
-        // MODEL GRID
+        // BOŞ KATALOG
         // --------------------------------------------------------
 
         if (filteredModels.isEmpty()) {
@@ -574,10 +520,11 @@ fun CatalogScreen(
                 ) {
 
                     Text(
-                        text = "Katalogda model bulunamadı",
+                        text =
+                            "Katalogda model bulunamadı",
+
                         fontSize = 17.sp,
-                        fontWeight =
-                            FontWeight.Bold,
+                        fontWeight = FontWeight.Bold,
                         color = DarkText
                     )
 
@@ -589,6 +536,7 @@ fun CatalogScreen(
                     Text(
                         text =
                             "Model, renk veya beden arayın.",
+
                         fontSize = 13.sp,
                         color = SoftText
                     )
@@ -596,6 +544,10 @@ fun CatalogScreen(
             }
 
         } else {
+
+            // ----------------------------------------------------
+            // MODEL GRID
+            // ----------------------------------------------------
 
             LazyVerticalGrid(
 
@@ -614,14 +566,10 @@ fun CatalogScreen(
                     ),
 
                 horizontalArrangement =
-                    Arrangement.spacedBy(
-                        10.dp
-                    ),
+                    Arrangement.spacedBy(10.dp),
 
                 verticalArrangement =
-                    Arrangement.spacedBy(
-                        10.dp
-                    )
+                    Arrangement.spacedBy(10.dp)
             ) {
 
                 items(
@@ -662,11 +610,13 @@ fun CatalogScreen(
                                 model
 
                             selectedColor =
-                                model.colors.firstOrNull()
+                                model.colors
+                                    .firstOrNull()
                                     ?: ""
 
                             selectedSize =
-                                model.sizes.firstOrNull()
+                                model.sizes
+                                    .firstOrNull()
                                     ?: ""
                         }
                     )
@@ -687,6 +637,7 @@ fun CatalogScreen(
                 model = model,
                 color = selectedColor
             )
+
 
         CatalogModelDetailDialog(
 
@@ -722,14 +673,24 @@ fun CatalogScreen(
                     size
             },
 
+
+            // ----------------------------------------------------
+            // BURASI ARTIK MODEL KODU DÜZENLEME
+            // ----------------------------------------------------
+
             onEdit = {
 
-                colorDialogInitialValue =
-                    selectedColor
+                modelEditInitialValue =
+                    "SNZ-${model.modelNumber}"
 
-                colorDialogVisible =
+                modelEditDialogVisible =
                     true
             },
+
+
+            // ----------------------------------------------------
+            // YENİ RENK EKLE
+            // ----------------------------------------------------
 
             onAddColor = {
 
@@ -740,11 +701,13 @@ fun CatalogScreen(
                     true
             },
 
+
             onClose = {
 
                 selectedModel =
                     null
             },
+
 
             imageOverride =
                 selectedRealImage
@@ -753,7 +716,139 @@ fun CatalogScreen(
 
 
     // ============================================================
-    // RENK EKLE / DÜZENLE
+    // MODEL KODU DÜZENLEME DİYALOĞU
+    // ============================================================
+
+    if (modelEditDialogVisible) {
+
+        CatalogModelEditDialog(
+
+            visible = true,
+
+            initialModelNumber =
+                modelEditInitialValue,
+
+            onSave = { newModelNumber ->
+
+                val currentModel =
+                    selectedModel
+
+                if (currentModel == null) {
+
+                    modelEditDialogVisible =
+                        false
+
+                } else {
+
+                    val normalizedNewModel =
+                        normalizeModelNumber(
+                            newModelNumber
+                        )
+
+                    if (
+                        normalizedNewModel.isBlank()
+                    ) {
+
+                        Toast.makeText(
+                            context,
+                            "Geçerli bir model kodu girin.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                    } else {
+
+                        scope.launch {
+
+                            // ------------------------------------
+                            // AYNI MODEL KODU KONTROLÜ
+                            // ------------------------------------
+
+                            val targetAlreadyExists =
+                                catalogItems.any { item ->
+
+                                    val itemModel =
+                                        normalizeModelNumber(
+                                            item.productNumber
+                                        )
+
+                                    itemModel ==
+                                            normalizedNewModel &&
+                                            itemModel !=
+                                            currentModel.modelNumber
+                                }
+
+
+                            if (targetAlreadyExists) {
+
+                                Toast.makeText(
+                                    context,
+                                    "SNZ-$normalizedNewModel zaten katalogda var.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                            } else {
+
+                                // -------------------------------
+                                // TÜM RENK / BEDEN KAYITLARINI
+                                // YENİ MODEL KODUNA TAŞI
+                                // -------------------------------
+
+                                currentModel.items.forEach { item ->
+
+                                    repository.insert(
+
+                                        item.copy(
+
+                                            productNumber =
+                                                normalizedNewModel,
+
+                                            company =
+                                                "SNZ"
+                                        )
+                                    )
+                                }
+
+
+                                Toast.makeText(
+                                    context,
+                                    "Model kodu SNZ-$normalizedNewModel olarak güncellendi.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+
+                                // -------------------------------
+                                // DETAYI KAPAT
+                                // -------------------------------
+
+                                selectedModel =
+                                    null
+
+                                selectedColor =
+                                    ""
+
+                                selectedSize =
+                                    ""
+
+                                modelEditDialogVisible =
+                                    false
+                            }
+                        }
+                    }
+                }
+            },
+
+
+            onCancel = {
+
+                modelEditDialogVisible =
+                    false
+            }
+        )
+    }
+
+
+    // ============================================================
+    // RENK DÜZENLE / EKLE
     // ============================================================
 
     if (colorDialogVisible) {
@@ -769,22 +864,26 @@ fun CatalogScreen(
                 if (
                     colorDialogInitialValue.isBlank()
                 ) {
+
                     "Kataloğa Renk Ekle"
+
                 } else {
+
                     "Renk Düzenle"
                 },
+
 
             onSave = { newColor ->
 
                 val cleanedColor =
                     newColor.trim()
 
-                if (
-                    cleanedColor.isNotBlank()
-                ) {
+
+                if (cleanedColor.isNotBlank()) {
 
                     val model =
                         selectedModel
+
 
                     if (model != null) {
 
@@ -792,6 +891,7 @@ fun CatalogScreen(
 
                             val existingItem =
                                 model.items.firstOrNull {
+
                                     it.color
                                         .trim()
                                         .equals(
@@ -800,16 +900,18 @@ fun CatalogScreen(
                                         )
                                 }
 
-                            if (
-                                existingItem == null
-                            ) {
+
+                            // --------------------------------
+                            // YENİ RENK
+                            // --------------------------------
+
+                            if (existingItem == null) {
 
                                 val baseItem =
                                     model.items.firstOrNull()
 
-                                if (
-                                    baseItem != null
-                                ) {
+
+                                if (baseItem != null) {
 
                                     val newItem =
                                         baseItem.copy(
@@ -834,15 +936,22 @@ fun CatalogScreen(
                                                 System.currentTimeMillis()
                                         )
 
+
                                     repository.insert(
                                         newItem
                                     )
                                 }
 
+
                             } else {
+
+                                // -----------------------------
+                                // MEVCUT RENGİ DEĞİŞTİR
+                                // -----------------------------
 
                                 if (
                                     colorDialogInitialValue.isNotBlank() &&
+
                                     !existingItem.color.equals(
                                         colorDialogInitialValue,
                                         ignoreCase = true
@@ -850,6 +959,7 @@ fun CatalogScreen(
                                 ) {
 
                                     repository.insert(
+
                                         existingItem.copy(
                                             color =
                                                 cleanedColor
@@ -857,6 +967,7 @@ fun CatalogScreen(
                                     )
                                 }
                             }
+
 
                             colorDialogVisible =
                                 false
@@ -874,6 +985,7 @@ fun CatalogScreen(
                         false
                 }
             },
+
 
             onCancel = {
 
@@ -896,20 +1008,27 @@ fun CatalogScreen(
 
             candidates =
                 findCameraCandidates(
+
                     models =
                         modelGroups,
-                    scannedText = ""
+
+                    scannedText =
+                        ""
                 ),
 
-            scannedText = "",
+            scannedText =
+                "",
+
 
             onCandidateSelected = { candidate ->
 
                 val selected =
                     modelGroups.firstOrNull {
+
                         it.modelNumber ==
                                 candidate.modelNumber
                     }
+
 
                 if (selected != null) {
 
@@ -927,12 +1046,14 @@ fun CatalogScreen(
                             ?: ""
                 }
 
+
                 cameraResultVisible =
                     false
 
                 cameraUri =
                     null
             },
+
 
             onNewModel = {
 
@@ -944,6 +1065,7 @@ fun CatalogScreen(
 
                 onAddCatalogItem()
             },
+
 
             onClose = {
 
@@ -958,12 +1080,10 @@ fun CatalogScreen(
 }
 
 
-/**
- * Seçilen rengin gerçek katalog görselini bulur.
- *
- * Gerçek renk fotoğrafı yoksa null döner.
- * Böylece modelin ana görseli korunur.
- */
+// =================================================================
+// RENK İÇİN GERÇEK KATALOG RESMİNİ BUL
+// =================================================================
+
 private fun findImageForColor(
     model: CatalogModelGroup,
     color: String
@@ -973,28 +1093,26 @@ private fun findImageForColor(
         return null
     }
 
-    return model.items
-        .firstOrNull { item ->
 
-            item.color
-                .trim()
-                .equals(
-                    color.trim(),
-                    ignoreCase = true
-                ) &&
-                    item.imagePath.isNotBlank()
+    return model.items.firstOrNull { item ->
 
-        }
-        ?.imagePath
+        item.color
+            .trim()
+            .equals(
+                color.trim(),
+                ignoreCase = true
+            ) &&
+
+                item.imagePath.isNotBlank()
+
+    }?.imagePath
 }
 
 
-/**
- * Kamera için şimdilik katalogdaki modelleri aday olarak üretir.
- *
- * Gerçek görüntü benzerlik motoru ayrı bir aşamada
- * bağlanacaktır.
- */
+// =================================================================
+// KAMERA ADAYLARI
+// =================================================================
+
 private fun findCameraCandidates(
     models: List<CatalogModelGroup>,
     scannedText: String
@@ -1005,19 +1123,26 @@ private fun findCameraCandidates(
             scannedText
         )
 
+
     if (query.isBlank()) {
         return emptyList()
     }
 
+
     return models
+
         .filter {
+
             it.modelNumber.contains(
                 query,
                 ignoreCase = true
             )
         }
+
         .take(5)
+
         .map {
+
             CatalogCameraCandidate(
 
                 modelNumber =
@@ -1037,92 +1162,66 @@ private fun findCameraCandidates(
 }
 
 
-/**
- * MEY2607
- * EY2607
- * SNZ2607
- * SNZ-2607
- *
- * hepsini:
- *
- * 2607
- *
- * yapar.
- */
+// =================================================================
+// MODEL NUMARASINI NORMALİZE ET
+// =================================================================
+
 private fun normalizeModelNumber(
     value: String
 ): String {
 
     return value
+
         .trim()
+
         .uppercase()
+
+        .replace("İ", "I")
+
+        .replace(" ", "")
+
+        .replace("-", "")
+
+        .replace("_", "")
+
         .replace(
-            "İ",
-            "I"
-        )
-        .replace(
-            " ",
+            Regex("^[A-Z]+"),
             ""
         )
-        .replace(
-            "-",
-            ""
-        )
-        .replace(
-            "_",
-            ""
-        )
-        .replace(
-            Regex(
-                "^[A-Z]+"
-            ),
-            ""
-        )
+
         .filter {
             it.isDigit()
         }
 }
 
 
-/**
- * Arama normalizasyonu.
- *
- * SNZ-2607
- * MEY2607
- * EY2607
- * 2607
- *
- * aynı modele ulaşır.
- */
+// =================================================================
+// ARAMA METNİNİ NORMALİZE ET
+// =================================================================
+
 private fun normalizeSearchQuery(
     value: String
 ): String {
 
     return value
+
         .trim()
+
         .uppercase()
+
+        .replace("İ", "I")
+
+        .replace(" ", "")
+
+        .replace("-", "")
+
+        .replace("_", "")
+
         .replace(
-            "İ",
-            "I"
-        )
-        .replace(
-            " ",
+            Regex("^[A-Z]+"),
             ""
         )
-        .replace(
-            "-",
-            ""
-        )
-        .replace(
-            "_",
-            ""
-        )
-        .replace(
-            Regex(
-                "^[A-Z]+"
-            ),
-            ""
-        )
+
         .filter {
             it.isDigit()
         }
