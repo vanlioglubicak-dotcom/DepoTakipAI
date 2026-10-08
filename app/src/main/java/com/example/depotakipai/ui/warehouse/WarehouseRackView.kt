@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +42,10 @@ fun WarehouseRackView(
     onAddRackClick: () -> Unit = {}
 ) {
 
+    val activeRacks = racks
+        .filter { it.isActive }
+        .sortedBy { it.displayOrder }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -51,7 +55,7 @@ fun WarehouseRackView(
 
         WarehouseRackHeader(
             row = row,
-            rackCount = racks.count { it.isActive },
+            rackCount = activeRacks.size,
             onAddRackClick = onAddRackClick
         )
 
@@ -59,7 +63,7 @@ fun WarehouseRackView(
             modifier = Modifier.height(14.dp)
         )
 
-        if (racks.none { it.isActive }) {
+        if (activeRacks.isEmpty()) {
 
             EmptyRackState(
                 onAddRackClick = onAddRackClick
@@ -71,15 +75,14 @@ fun WarehouseRackView(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
 
-                items(
-                    items = racks
-                        .filter { it.isActive }
-                        .sortedBy { it.displayOrder },
-                    key = { it.id }
-                ) { rack ->
+                itemsIndexed(
+                    items = activeRacks,
+                    key = { _, rack -> rack.id }
+                ) { index, rack ->
 
                     WarehouseRackCard(
                         rack = rack,
+                        rackLetter = rackLetter(index),
                         onClick = {
                             onRackClick(rack)
                         }
@@ -88,6 +91,20 @@ fun WarehouseRackView(
             }
         }
     }
+}
+
+private fun rackLetter(index: Int): String {
+
+    var number = index + 1
+    val result = StringBuilder()
+
+    while (number > 0) {
+        val remainder = (number - 1) % 26
+        result.insert(0, ('A'.code + remainder).toChar())
+        number = (number - 1) / 26
+    }
+
+    return result.toString()
 }
 
 @Composable
@@ -144,13 +161,15 @@ private fun WarehouseRackHeader(
                 Text(
                     text = row.name,
                     fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
 
                 Text(
-                    text = "$rackCount aktif raf",
+                    text = "$rackCount RAF",
                     fontSize = 13.sp,
-                    color = RackGray
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
                 )
             }
 
@@ -171,7 +190,7 @@ private fun WarehouseRackHeader(
                     text = "+",
                     fontSize = 23.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RackDarkRed
+                    color = Color.Black
                 )
             }
         }
@@ -181,6 +200,7 @@ private fun WarehouseRackHeader(
 @Composable
 private fun WarehouseRackCard(
     rack: WarehouseRack,
+    rackLetter: String,
     onClick: () -> Unit
 ) {
 
@@ -200,9 +220,12 @@ private fun WarehouseRackCard(
     ) {
 
         Column(
-            modifier = Modifier.padding(14.dp)
+            modifier = Modifier.padding(12.dp)
         ) {
 
+            /*
+             * RAF BAŞLIK
+             */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -219,10 +242,10 @@ private fun WarehouseRackCard(
                 ) {
 
                     Text(
-                        text = rack.rackCode,
-                        fontSize = 14.sp,
+                        text = rackLetter,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = RackBlue
+                        color = Color.Black
                     )
                 }
 
@@ -235,23 +258,24 @@ private fun WarehouseRackCard(
                 ) {
 
                     Text(
-                        text = rack.name,
+                        text = "RAF $rackLetter",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
 
                     Text(
-                        text = "Raf ${rack.rackCode}",
+                        text = rack.name,
                         fontSize = 12.sp,
-                        color = RackGray
+                        color = Color.Black
                     )
                 }
 
                 Text(
-                    text = "${rack.shelfCount} kat",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = RackDarkRed
+                    text = "${rack.shelfCount} KAT",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
             }
 
@@ -259,21 +283,154 @@ private fun WarehouseRackCard(
                 modifier = Modifier.height(12.dp)
             )
 
-            RackShelfPreview(
-                shelfCount = rack.shelfCount
-            )
+            /*
+             * ÖN / ARKA BÖLÜMLERİ
+             */
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                RackSideCard(
+                    title = "ARKA",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+
+                RackSideCard(
+                    title = "ÖN",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+            }
 
             Spacer(
                 modifier = Modifier.height(10.dp)
             )
 
-            Text(
-                text = "Katları ve konumları görüntüle",
-                fontSize = 12.sp,
-                color = RackDarkRed,
-                fontWeight = FontWeight.Medium
+            /*
+             * RAF İŞLEM BUTONLARI
+             */
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+
+                RackActionButton(
+                    text = "RAF DÜZENLE",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+
+                RackActionButton(
+                    text = "RAF ÇIKAR",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+
+                RackActionButton(
+                    text = "MODEL EKLE",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+
+                RackActionButton(
+                    text = "MODEL ÇIKAR",
+                    modifier = Modifier.weight(1f),
+                    onClick = onClick
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            /*
+             * KAT ÖNİZLEME
+             */
+            RackShelfPreview(
+                shelfCount = rack.shelfCount
             )
         }
+    }
+}
+
+@Composable
+private fun RackSideCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+
+    Box(
+        modifier = modifier
+            .height(58.dp)
+            .background(
+                color = RackBlue.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable(
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            Text(
+                text = title,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Text(
+                text = "BÖLÜM",
+                fontSize = 9.sp,
+                color = Color.Black
+            )
+        }
+    }
+}
+
+@Composable
+private fun RackActionButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+
+    Box(
+        modifier = modifier
+            .height(34.dp)
+            .background(
+                color = RackBorder,
+                shape = RoundedCornerShape(7.dp)
+            )
+            .clickable(
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Text(
+            text = text,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
     }
 }
 
@@ -305,7 +462,7 @@ private fun RackShelfPreview(
                 Text(
                     text = "Kat tanımlanmamış",
                     fontSize = 11.sp,
-                    color = RackGray
+                    color = Color.Black
                 )
             }
 
@@ -322,7 +479,7 @@ private fun RackShelfPreview(
                         text = "${index + 1}",
                         modifier = Modifier.width(24.dp),
                         fontSize = 10.sp,
-                        color = RackGray
+                        color = Color.Black
                     )
 
                     Box(
@@ -342,7 +499,7 @@ private fun RackShelfPreview(
                 Text(
                     text = "+${shelfCount - 8} kat daha",
                     fontSize = 10.sp,
-                    color = RackGray
+                    color = Color.Black
                 )
             }
         }
@@ -370,10 +527,10 @@ private fun EmptyRackState(
         ) {
 
             Text(
-                text = "Bu sırada henüz raf yok",
+                text = "Bu sırada henüz RAF yok",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.DarkGray
+                color = Color.Black
             )
 
             Spacer(
@@ -383,7 +540,7 @@ private fun EmptyRackState(
             Text(
                 text = "İlk rafı ekleyerek depo yapısını oluşturmaya başlayabilirsin.",
                 fontSize = 12.sp,
-                color = RackGray
+                color = Color.Black
             )
 
             Spacer(

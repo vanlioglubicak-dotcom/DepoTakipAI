@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.example.depotakipai.data.catalog.CatalogColorCatalog
 import com.example.depotakipai.data.catalog.CatalogRepository
 import com.example.depotakipai.data.local.DatabaseProvider
 
@@ -675,7 +676,7 @@ fun CatalogScreen(
 
 
             // ----------------------------------------------------
-            // BURASI ARTIK MODEL KODU DÜZENLEME
+            // MODEL KODU DÜZENLEME
             // ----------------------------------------------------
 
             onEdit = {
@@ -788,10 +789,10 @@ fun CatalogScreen(
 
                             } else {
 
-                                // -------------------------------
+                                // --------------------------------
                                 // TÜM RENK / BEDEN KAYITLARINI
                                 // YENİ MODEL KODUNA TAŞI
-                                // -------------------------------
+                                // --------------------------------
 
                                 currentModel.items.forEach { item ->
 
@@ -816,9 +817,9 @@ fun CatalogScreen(
                                 ).show()
 
 
-                                // -------------------------------
+                                // --------------------------------
                                 // DETAYI KAPAT
-                                // -------------------------------
+                                // --------------------------------
 
                                 selectedModel =
                                     null
@@ -875,111 +876,285 @@ fun CatalogScreen(
 
             onSave = { newColor ->
 
+                // ------------------------------------------------
+                // GIRILEN RENGİ TEMİZLE
+                // ------------------------------------------------
+
                 val cleanedColor =
                     newColor.trim()
 
+                if (cleanedColor.isBlank()) {
 
-                if (cleanedColor.isNotBlank()) {
+                    colorDialogVisible =
+                        false
 
-                    val model =
-                        selectedModel
-
-
-                    if (model != null) {
-
-                        scope.launch {
-
-                            val existingItem =
-                                model.items.firstOrNull {
-
-                                    it.color
-                                        .trim()
-                                        .equals(
-                                            cleanedColor,
-                                            ignoreCase = true
-                                        )
-                                }
+                    return@CatalogColorEditDialog
+                }
 
 
-                            // --------------------------------
-                            // YENİ RENK
-                            // --------------------------------
+                // ------------------------------------------------
+                // MERKEZİ RENK KATALOĞUNDAN GERÇEK ADI AL
+                // ------------------------------------------------
 
-                            if (existingItem == null) {
-
-                                val baseItem =
-                                    model.items.firstOrNull()
-
-
-                                if (baseItem != null) {
-
-                                    val newItem =
-                                        baseItem.copy(
-
-                                            id =
-                                                UUID.randomUUID()
-                                                    .toString(),
-
-                                            productNumber =
-                                                model.modelNumber,
-
-                                            company =
-                                                "SNZ",
-
-                                            color =
-                                                cleanedColor,
-
-                                            size =
-                                                selectedSize,
-
-                                            createdAt =
-                                                System.currentTimeMillis()
-                                        )
+                val canonicalColor =
+                    CatalogColorCatalog
+                        .canonicalName(cleanedColor)
+                        ?: cleanedColor
 
 
-                                    repository.insert(
-                                        newItem
+                val model =
+                    selectedModel
+
+                if (model == null) {
+
+                    colorDialogVisible =
+                        false
+
+                    return@CatalogColorEditDialog
+                }
+
+
+                scope.launch {
+
+                    // =================================================
+                    // AYNI RENK ZATEN VAR MI?
+                    // =================================================
+
+                    val existingItem =
+                        model.items.firstOrNull { item ->
+
+                            CatalogColorCatalog.normalize(
+                                item.color
+                            ) ==
+                                    CatalogColorCatalog.normalize(
+                                        canonicalColor
                                     )
-                                }
+                        }
 
 
-                            } else {
+                    // =================================================
+                    // YENİ RENK EKLE
+                    // =================================================
 
-                                // -----------------------------
-                                // MEVCUT RENGİ DEĞİŞTİR
-                                // -----------------------------
+                    if (existingItem == null) {
 
-                                if (
-                                    colorDialogInitialValue.isNotBlank() &&
+                        val baseItem =
+                            model.items.firstOrNull()
 
-                                    !existingItem.color.equals(
-                                        colorDialogInitialValue,
-                                        ignoreCase = true
-                                    )
-                                ) {
+                        if (baseItem != null) {
 
-                                    repository.insert(
+                            val newItem =
+                                baseItem.copy(
 
-                                        existingItem.copy(
-                                            color =
-                                                cleanedColor
-                                        )
-                                    )
-                                }
+                                    // ---------------------------------
+                                    // YENİ KAYIT ID
+                                    // ---------------------------------
+
+                                    id =
+                                        UUID.randomUUID()
+                                            .toString(),
+
+                                    // ---------------------------------
+                                    // MODEL
+                                    // ---------------------------------
+
+                                    productNumber =
+                                        model.modelNumber,
+
+                                    // ---------------------------------
+                                    // ŞİRKET HER ZAMAN SNZ
+                                    // ---------------------------------
+
+                                    company =
+                                        "SNZ",
+
+                                    // ---------------------------------
+                                    // MERKEZİ KATALOG RENGİ
+                                    // ---------------------------------
+
+                                    color =
+                                        canonicalColor,
+
+                                    // ---------------------------------
+                                    // SEÇİLİ BEDEN
+                                    // ---------------------------------
+
+                                    size =
+                                        selectedSize,
+
+                                    // =================================================
+                                    // ÇOK ÖNEMLİ
+                                    //
+                                    // YENİ RENK İÇİN SİYAH FOTOĞRAFI KOPYALAMA.
+                                    //
+                                    // Gerçek Lacivert fotoğrafı yoksa boş kalacak.
+                                    // Böylece DetailDialog recolor sistemini kullanacak.
+                                    // =================================================
+
+                                    imagePath =
+                                        "",
+
+                                    createdAt =
+                                        System.currentTimeMillis()
+                                )
+
+
+                            // -----------------------------------------
+                            // VERİTABANINA KAYDET
+                            // -----------------------------------------
+
+                            repository.insert(
+                                newItem
+                            )
+
+
+                            // -----------------------------------------
+                            // EKRANDAKİ MODELİ ANINDA GÜNCELLE
+                            // -----------------------------------------
+
+                            selectedModel =
+                                model.copy(
+
+                                    colors =
+                                        (
+                                                model.colors +
+                                                        canonicalColor
+                                                )
+                                            .distinctBy {
+                                                CatalogColorCatalog
+                                                    .normalize(it)
+                                            }
+                                            .sorted(),
+
+                                    items =
+                                        model.items +
+                                                newItem
+                                )
+
+
+                            // -----------------------------------------
+                            // EKLENEN RENGİ SEÇ
+                            // -----------------------------------------
+
+                            selectedColor =
+                                canonicalColor
+
+
+                            // Eğer beden boşsa mevcut ilk bedeni koru
+                            if (selectedSize.isBlank()) {
+
+                                selectedSize =
+                                    model.sizes
+                                        .firstOrNull()
+                                        ?: ""
                             }
 
 
-                            colorDialogVisible =
-                                false
+                            Toast.makeText(
+                                context,
+                                "$canonicalColor rengi SNZ-${model.modelNumber} modeline eklendi.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
+
 
                     } else {
 
-                        colorDialogVisible =
-                            false
+                        // =================================================
+                        // RENK ZATEN VAR
+                        // =================================================
+
+                        selectedColor =
+                            existingItem.color
+
+
+                        // Eğer mevcut renk düzenleniyorsa
+                        // ve gerçekten farklı bir renk seçildiyse
+                        // mevcut kaydı güncelle.
+                        if (
+                            colorDialogInitialValue.isNotBlank() &&
+                            !CatalogColorCatalog.normalize(
+                                existingItem.color
+                            ).equals(
+                                CatalogColorCatalog.normalize(
+                                    colorDialogInitialValue
+                                ),
+                                ignoreCase = true
+                            )
+                        ) {
+
+                            repository.insert(
+
+                                existingItem.copy(
+
+                                    color =
+                                        canonicalColor,
+
+                                    imagePath =
+                                        existingItem.imagePath
+                                )
+                            )
+
+
+                            // Ekrandaki model grubunu da güncelle
+                            selectedModel =
+                                model.copy(
+
+                                    colors =
+                                        model.items
+                                            .map { item ->
+
+                                                if (
+                                                    item.id ==
+                                                    existingItem.id
+                                                ) {
+                                                    canonicalColor
+                                                } else {
+                                                    item.color
+                                                }
+                                            }
+                                            .map {
+                                                it.trim()
+                                            }
+                                            .filter {
+                                                it.isNotBlank()
+                                            }
+                                            .distinctBy {
+                                                CatalogColorCatalog
+                                                    .normalize(it)
+                                            }
+                                            .sorted(),
+
+                                    items =
+                                        model.items.map { item ->
+
+                                            if (
+                                                item.id ==
+                                                existingItem.id
+                                            ) {
+
+                                                item.copy(
+                                                    color =
+                                                        canonicalColor
+                                                )
+
+                                            } else {
+
+                                                item
+                                            }
+                                        }
+                                )
+
+
+                            selectedColor =
+                                canonicalColor
+                        }
                     }
 
-                } else {
+
+                    // ------------------------------------------------
+                    // DİYALOĞU KAPAT
+                    // ------------------------------------------------
 
                     colorDialogVisible =
                         false
@@ -1096,12 +1271,12 @@ private fun findImageForColor(
 
     return model.items.firstOrNull { item ->
 
-        item.color
-            .trim()
-            .equals(
-                color.trim(),
-                ignoreCase = true
-            ) &&
+        CatalogColorCatalog.normalize(
+            item.color
+        ) ==
+                CatalogColorCatalog.normalize(
+                    color
+                ) &&
 
                 item.imagePath.isNotBlank()
 

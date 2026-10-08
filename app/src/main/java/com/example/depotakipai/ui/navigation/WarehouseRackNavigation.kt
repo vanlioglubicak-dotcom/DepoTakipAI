@@ -40,11 +40,9 @@ fun WarehouseRackNavigation(
     }
 
     LaunchedEffect(rack.id) {
-
         viewModel.getLocationsForRack(
             rackId = rack.id
         ) { result ->
-
             locations = result
         }
     }

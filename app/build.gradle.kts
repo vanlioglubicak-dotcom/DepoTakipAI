@@ -106,7 +106,17 @@ dependencies {
     // =========================================================
 
     implementation("com.google.mlkit:text-recognition:16.0.1")
+// =========================================================
+// ML KIT - AI SUBJECT SEGMENTATION
+// =========================================================
+// İnsan/özne ile arka planı AI ile ayırmak için.
+// Kıyafet recolor sisteminin profesyonel segmentasyon
+// altyapısı olarak kullanılacak.
+// =========================================================
 
+    implementation(
+        "com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1"
+    )
     // =========================================================
     // TEST
     // =========================================================
