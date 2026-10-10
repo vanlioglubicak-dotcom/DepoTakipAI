@@ -46,12 +46,9 @@ class WarehouseViewModel(
             warehouseRepository = repository
         )
 
-    private val _uiState =
-        MutableStateFlow(
-            WarehouseUiState(
-                isLoading = true
-            )
-        )
+    private val _uiState = MutableStateFlow(
+        WarehouseUiState(isLoading = true)
+    )
 
     val uiState: StateFlow<WarehouseUiState> =
         _uiState.asStateFlow()
@@ -61,39 +58,28 @@ class WarehouseViewModel(
     }
 
     fun loadWarehouse() {
-
         viewModelScope.launch {
-
-            _uiState.value =
-                _uiState.value.copy(
-                    isLoading = true,
-                    errorMessage = null
-                )
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null
+            )
 
             try {
-
                 initializeWarehouseUseCase()
 
-                val structure =
-                    getWarehouseStructureUseCase()
+                val structure = getWarehouseStructureUseCase()
 
-                _uiState.value =
-                    WarehouseUiState(
-                        isLoading = false,
-                        rows = structure.rows,
-                        racks = structure.racks,
-                        errorMessage = null
-                    )
-
+                _uiState.value = WarehouseUiState(
+                    isLoading = false,
+                    rows = structure.rows,
+                    racks = structure.racks
+                )
             } catch (exception: Exception) {
-
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage =
-                            exception.message
-                                ?: "Depo verileri yüklenemedi."
-                    )
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = exception.message
+                        ?: "Depo verileri yüklenemedi."
+                )
             }
         }
     }
@@ -101,7 +87,6 @@ class WarehouseViewModel(
     fun getRacksForRow(
         rowId: Long
     ): List<WarehouseRack> {
-
         return _uiState.value.racks[rowId]
             ?: emptyList()
     }
@@ -110,21 +95,64 @@ class WarehouseViewModel(
         rackId: Long,
         onResult: (List<WarehouseLocation>) -> Unit = {}
     ) {
-
         viewModelScope.launch {
-
             try {
-
-                val locations =
-                    getWarehouseLocationsUseCase(
-                        rackId = rackId
-                    )
+                val locations = getWarehouseLocationsUseCase(
+                    rackId = rackId
+                )
 
                 onResult(locations)
-
             } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = exception.message
+                        ?: "Konumlar yüklenemedi."
+                )
 
                 onResult(emptyList())
+            }
+        }
+    }
+
+    fun addLocation(
+        location: WarehouseLocation,
+        onResult: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.insertLocation(location)
+                onResult(true)
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = exception.message
+                        ?: "Konum kaydedilemedi."
+                )
+
+                onResult(false)
+            }
+        }
+    }
+
+    fun assignProductCode(
+        location: WarehouseLocation,
+        productCode: String,
+        onResult: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.updateLocation(
+                    location.copy(
+                        productCode = productCode.trim()
+                    )
+                )
+
+                onResult(true)
+            } catch (exception: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = exception.message
+                        ?: "Ürün kodu konuma kaydedilemedi."
+                )
+
+                onResult(false)
             }
         }
     }

@@ -12,6 +12,7 @@ data class WarehouseLocationEntity(
     val locationNumber: Int,
     val position: String,
     val locationCode: String,
+    val productCode: String = "",
     val isActive: Boolean,
     val createdAt: Long
 )

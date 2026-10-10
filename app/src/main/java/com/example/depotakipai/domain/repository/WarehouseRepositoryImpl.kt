@@ -1,3 +1,4 @@
+
 package com.example.depotakipai.data.repository
 
 import com.example.depotakipai.data.local.WarehouseDao
@@ -14,9 +15,7 @@ class WarehouseRepositoryImpl(
     private val warehouseDao: WarehouseDao
 ) : WarehouseRepository {
 
-    // ---------------------------------------------------------
     // SIRA
-    // ---------------------------------------------------------
 
     override suspend fun getAllRows(): List<WarehouseRow> {
         return warehouseDao.getAllRows().map { it.toDomain() }
@@ -26,61 +25,37 @@ class WarehouseRepositoryImpl(
         return warehouseDao.getActiveRows().map { it.toDomain() }
     }
 
-    override suspend fun getRowById(
-        rowId: Long
-    ): WarehouseRow? {
+    override suspend fun getRowById(rowId: Long): WarehouseRow? {
         return warehouseDao.getRowById(rowId)?.toDomain()
     }
 
-    override suspend fun insertRow(
-        row: WarehouseRow
-    ): Long {
-        return warehouseDao.insertRow(
-            row.toEntity()
-        )
+    override suspend fun insertRow(row: WarehouseRow): Long {
+        return warehouseDao.insertRow(row.toEntity())
     }
 
-    override suspend fun insertRows(
-        rows: List<WarehouseRow>
-    ) {
-        warehouseDao.insertRows(
-            rows.map { it.toEntity() }
-        )
+    override suspend fun insertRows(rows: List<WarehouseRow>) {
+        warehouseDao.insertRows(rows.map { it.toEntity() })
     }
 
-    override suspend fun updateRow(
-        row: WarehouseRow
-    ) {
-        warehouseDao.updateRow(
-            row.toEntity()
-        )
+    override suspend fun updateRow(row: WarehouseRow) {
+        warehouseDao.updateRow(row.toEntity())
     }
 
-    override suspend fun deleteRow(
-        row: WarehouseRow
-    ) {
-        warehouseDao.deleteRow(
-            row.toEntity()
-        )
+    override suspend fun deleteRow(row: WarehouseRow) {
+        warehouseDao.deleteRow(row.toEntity())
     }
 
-    // ---------------------------------------------------------
     // RAF
-    // ---------------------------------------------------------
 
     override suspend fun getAllRacks(): List<WarehouseRack> {
         return warehouseDao.getAllRacks().map { it.toDomain() }
     }
 
-    override suspend fun getRacksByRow(
-        rowId: Long
-    ): List<WarehouseRack> {
+    override suspend fun getRacksByRow(rowId: Long): List<WarehouseRack> {
         return warehouseDao.getRacksByRow(rowId).map { it.toDomain() }
     }
 
-    override suspend fun getRackById(
-        rackId: Long
-    ): WarehouseRack? {
+    override suspend fun getRackById(rackId: Long): WarehouseRack? {
         return warehouseDao.getRackById(rackId)?.toDomain()
     }
 
@@ -94,41 +69,23 @@ class WarehouseRepositoryImpl(
         )?.toDomain()
     }
 
-    override suspend fun insertRack(
-        rack: WarehouseRack
-    ): Long {
-        return warehouseDao.insertRack(
-            rack.toEntity()
-        )
+    override suspend fun insertRack(rack: WarehouseRack): Long {
+        return warehouseDao.insertRack(rack.toEntity())
     }
 
-    override suspend fun insertRacks(
-        racks: List<WarehouseRack>
-    ) {
-        warehouseDao.insertRacks(
-            racks.map { it.toEntity() }
-        )
+    override suspend fun insertRacks(racks: List<WarehouseRack>) {
+        warehouseDao.insertRacks(racks.map { it.toEntity() })
     }
 
-    override suspend fun updateRack(
-        rack: WarehouseRack
-    ) {
-        warehouseDao.updateRack(
-            rack.toEntity()
-        )
+    override suspend fun updateRack(rack: WarehouseRack) {
+        warehouseDao.updateRack(rack.toEntity())
     }
 
-    override suspend fun deleteRack(
-        rack: WarehouseRack
-    ) {
-        warehouseDao.deleteRack(
-            rack.toEntity()
-        )
+    override suspend fun deleteRack(rack: WarehouseRack) {
+        warehouseDao.deleteRack(rack.toEntity())
     }
 
-    // ---------------------------------------------------------
     // KONUM
-    // ---------------------------------------------------------
 
     override suspend fun getAllLocations(): List<WarehouseLocation> {
         return warehouseDao.getAllLocations().map { it.toDomain() }
@@ -137,9 +94,7 @@ class WarehouseRepositoryImpl(
     override suspend fun getLocationsByRack(
         rackId: Long
     ): List<WarehouseLocation> {
-        return warehouseDao.getLocationsByRack(rackId).map {
-            it.toDomain()
-        }
+        return warehouseDao.getLocationsByRack(rackId).map { it.toDomain() }
     }
 
     override suspend fun getLocationById(
@@ -156,41 +111,23 @@ class WarehouseRepositoryImpl(
         )?.toDomain()
     }
 
-    override suspend fun insertLocation(
-        location: WarehouseLocation
-    ): Long {
-        return warehouseDao.insertLocation(
-            location.toEntity()
-        )
+    override suspend fun insertLocation(location: WarehouseLocation): Long {
+        return warehouseDao.insertLocation(location.toEntity())
     }
 
-    override suspend fun insertLocations(
-        locations: List<WarehouseLocation>
-    ) {
-        warehouseDao.insertLocations(
-            locations.map { it.toEntity() }
-        )
+    override suspend fun insertLocations(locations: List<WarehouseLocation>) {
+        warehouseDao.insertLocations(locations.map { it.toEntity() })
     }
 
-    override suspend fun updateLocation(
-        location: WarehouseLocation
-    ) {
-        warehouseDao.updateLocation(
-            location.toEntity()
-        )
+    override suspend fun updateLocation(location: WarehouseLocation) {
+        warehouseDao.updateLocation(location.toEntity())
     }
 
-    override suspend fun deleteLocation(
-        location: WarehouseLocation
-    ) {
-        warehouseDao.deleteLocation(
-            location.toEntity()
-        )
+    override suspend fun deleteLocation(location: WarehouseLocation) {
+        warehouseDao.deleteLocation(location.toEntity())
     }
 
-    // ---------------------------------------------------------
     // MAPPERS
-    // ---------------------------------------------------------
 
     private fun WarehouseRowEntity.toDomain(): WarehouseRow {
         return WarehouseRow(
@@ -248,6 +185,7 @@ class WarehouseRepositoryImpl(
             locationNumber = locationNumber,
             position = position.toShelfPosition(),
             locationCode = locationCode,
+            productCode = productCode,
             isActive = isActive,
             createdAt = createdAt
         )
@@ -261,6 +199,7 @@ class WarehouseRepositoryImpl(
             locationNumber = locationNumber,
             position = position.name,
             locationCode = locationCode,
+            productCode = productCode,
             isActive = isActive,
             createdAt = createdAt
         )
@@ -268,9 +207,7 @@ class WarehouseRepositoryImpl(
 
     private fun String.toShelfPosition(): ShelfPosition {
         return when (trim().uppercase()) {
-            "BACK",
-            "ARKA" -> ShelfPosition.BACK
-
+            "BACK", "ARKA" -> ShelfPosition.BACK
             else -> ShelfPosition.FRONT
         }
     }

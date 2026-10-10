@@ -33,7 +33,7 @@ import com.example.depotakipai.data.model.WarehouseRowEntity
         DepotListRecordEntity::class,
         CatalogItemEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

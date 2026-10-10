@@ -51,6 +51,8 @@ fun WarehouseRackNavigation(
         rack = rack,
         locations = locations,
         onLocationClick = onLocationClick,
-        onAddLocationClick = onAddLocationClick
+        onAddLocationClick = {
+            onAddLocationClick()
+        }
     )
 }

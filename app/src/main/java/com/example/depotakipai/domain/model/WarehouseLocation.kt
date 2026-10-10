@@ -7,6 +7,7 @@ data class WarehouseLocation(
     val locationNumber: Int,
     val position: ShelfPosition = ShelfPosition.FRONT,
     val locationCode: String,
+    val productCode: String = "",
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()
 )
